@@ -1,330 +1,774 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Options Scanner</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>OptionsDesk — Options Analyzer &amp; Strategy Scanner</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-:root{
-  --bg:#0b0a07; --panel:#16130c; --panel2:#1e1a10; --line:#2c2615;
-  --txt:#f5efe2; --mut:#9a8e6f; --acc:#ffb627; --gold:#ffd24d;
-  --grn:#4be38a; --red:#ff5b5b; --blu:#6fb4ff; --amb:#ffb627;
-}
-*{box-sizing:border-box;margin:0;padding:0}
-body{background:
-  radial-gradient(1100px 480px at 85% -10%,rgba(255,182,39,.07),transparent),
-  radial-gradient(800px 360px at 0% 0%,rgba(255,210,77,.04),transparent),
-  var(--bg);
-  color:var(--txt);font-family:'IBM Plex Sans Arabic',sans-serif;font-size:14px;
-  line-height:1.5;padding:14px;max-width:1400px;margin:0 auto;min-height:100vh}
-.mono{font-family:'Space Mono',monospace;direction:ltr}
-h1{font-size:21px;font-weight:700;letter-spacing:.3px}
-h2{font-size:14px;color:var(--acc);margin-bottom:10px;font-weight:700}
-.head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;
-  padding:16px 18px;background:linear-gradient(135deg,rgba(255,182,39,.08),#16130c 45%,#110f09);
-  border:1px solid var(--line);border-radius:16px;margin-bottom:12px;
-  box-shadow:0 10px 30px -18px rgba(255,182,39,.45)}
-.badge{font-size:11px;padding:3px 9px;border-radius:20px;background:#241f12;color:var(--mut);border:1px solid var(--line)}
-.badge.live{color:var(--gold);border-color:var(--gold)}
-.controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
-input,select{background:var(--panel2);border:1px solid var(--line);color:var(--txt);
-  padding:9px 12px;border-radius:9px;font-family:'Space Mono',monospace;font-size:14px}
-input:focus,select:focus{outline:none;border-color:var(--acc)}
-button{background:var(--acc);color:#1a1400;border:none;padding:10px 18px;border-radius:9px;
-  font-weight:700;cursor:pointer;font-family:inherit;font-size:13px;transition:.15s}
-button:hover{filter:brightness(1.08)}
-button:disabled{opacity:.6;cursor:default}
-button.ghost{background:var(--panel2);color:var(--txt);border:1px solid var(--line)}
-.tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
-.tab{padding:7px 14px;border-radius:9px;background:var(--panel2);border:1px solid var(--line);
-  cursor:pointer;font-size:13px;color:var(--mut)}
-.tab.on{background:var(--acc);color:#1a1400;font-weight:700;border-color:var(--acc)}
-.card{background:linear-gradient(180deg,#17140d,#110f09);border:1px solid var(--line);
-  border-radius:16px;padding:16px;box-shadow:0 8px 24px -20px rgba(0,0,0,.8)}
-.card.wide{grid-column:1/-1}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
-.row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #221d11}
-.row:last-child{border-bottom:none}
-.row .k{color:var(--mut);font-size:13px}
-.row .v{font-family:'Space Mono',monospace;font-weight:700}
-.up{color:var(--grn)} .down{color:var(--red)} .neu{color:var(--amb)}
-.warn{background:rgba(255,182,39,.07);border:1px solid rgba(255,182,39,.4);color:var(--amb);
-  padding:10px 14px;border-radius:10px;font-size:12px;margin-bottom:12px;line-height:1.7}
-.bar{height:8px;background:#221d11;border-radius:5px;overflow:hidden;margin-top:4px}
-.bar>i{display:block;height:100%;border-radius:5px;transition:width .4s}
-.note{font-size:12px;color:var(--mut);margin-top:8px;line-height:1.7}
-table{width:100%;border-collapse:collapse;font-size:12px}
-th,td{padding:8px 7px;text-align:right;border-bottom:1px solid #221d11;white-space:nowrap}
-th{color:var(--mut);font-weight:500}
-td.mono{direction:ltr;text-align:left}
-tbody tr{transition:background .12s}
-tbody tr:hover{background:rgba(255,182,39,.06)}
-.loader{color:var(--mut);font-size:13px;padding:8px 0}
-.tag{display:inline-block;padding:2px 9px;border-radius:7px;font-weight:700;font-size:11px}
-.tag.call{background:rgba(75,227,138,.15);color:var(--grn);border:1px solid var(--grn)}
-.tag.put{background:rgba(255,91,91,.15);color:var(--red);border:1px solid var(--red)}
-@media(max-width:640px){h1{font-size:17px} .head{padding:13px}}
+  :root{
+    --bg:#0a0c0f; --panel:#12161b; --panel2:#181d24; --raise:#1e242c;
+    --border:#272f39; --border-soft:#1f262e;
+    --text:#e8ebef; --muted:#8b95a1; --faint:#5c6671;
+    --amber:#ffb000; --amber-dim:#7a5500;
+    --green:#2ee090; --green-dim:#16321f;
+    --red:#ff5d5d; --red-dim:#3a1c1c;
+    --blue:#5fa3ff;
+    --mono:'IBM Plex Mono',ui-monospace,monospace;
+    --sans:'IBM Plex Sans',system-ui,sans-serif;
+    --disp:'Bricolage Grotesque',var(--sans);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--text); font-family:var(--sans);
+    font-size:14px; line-height:1.5; min-height:100vh;
+    background-image:
+      radial-gradient(900px 500px at 85% -10%, rgba(255,176,0,.06), transparent 60%),
+      radial-gradient(700px 400px at 5% 0%, rgba(95,163,255,.05), transparent 55%),
+      linear-gradient(var(--border-soft) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border-soft) 1px, transparent 1px);
+    background-size:auto,auto,42px 42px,42px 42px;
+    background-position:0 0,0 0,-1px -1px,-1px -1px;
+  }
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.025;z-index:0;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+  .wrap{position:relative;z-index:1;max-width:1240px;margin:0 auto;padding:0 20px 80px}
+
+  /* Header */
+  header{display:flex;align-items:center;justify-content:space-between;gap:20px;
+    padding:22px 0 18px;border-bottom:1px solid var(--border);margin-bottom:26px;flex-wrap:wrap}
+  .brand{display:flex;align-items:baseline;gap:12px}
+  .brand h1{font-family:var(--disp);font-weight:800;font-size:26px;letter-spacing:-.5px;margin:0;
+    background:linear-gradient(180deg,#fff,#cfd6df);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .brand .dot{color:var(--amber);-webkit-text-fill-color:var(--amber)}
+  .brand .tag{font-family:var(--mono);font-size:11px;color:var(--faint);letter-spacing:.5px;text-transform:uppercase}
+  .status{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:12px;color:var(--muted)}
+  .led{width:8px;height:8px;border-radius:50%;background:var(--faint);box-shadow:0 0 0 0 rgba(0,0,0,0)}
+  .led.ok{background:var(--green);box-shadow:0 0 10px var(--green)}
+  .led.busy{background:var(--amber);box-shadow:0 0 10px var(--amber);animation:pulse 1s infinite}
+  .led.err{background:var(--red);box-shadow:0 0 10px var(--red)}
+  @keyframes pulse{50%{opacity:.35}}
+
+  /* Panels */
+  .panel{background:linear-gradient(180deg,var(--panel),#0f1318);border:1px solid var(--border);
+    border-radius:14px;padding:18px;margin-bottom:18px}
+  .panel-h{font-family:var(--mono);font-size:11px;letter-spacing:1.5px;text-transform:uppercase;
+    color:var(--amber);margin:0 0 14px;display:flex;align-items:center;gap:8px}
+  .panel-h::before{content:"";width:18px;height:1px;background:var(--amber-dim)}
+
+  .grid{display:grid;gap:12px}
+  .field label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px;letter-spacing:.3px}
+  input,select{width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);
+    border-radius:9px;padding:9px 11px;font-family:var(--mono);font-size:13px;outline:none;transition:.15s}
+  input:focus,select:focus{border-color:var(--amber);box-shadow:0 0 0 3px rgba(255,176,0,.12)}
+  input::placeholder{color:var(--faint)}
+  select{cursor:pointer;appearance:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%238b95a1'%3E%3Cpath d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 11px center;padding-right:30px}
+
+  button{font-family:var(--mono);font-size:12px;letter-spacing:.5px;border-radius:9px;cursor:pointer;
+    border:1px solid var(--border);background:var(--panel2);color:var(--text);padding:9px 16px;transition:.15s}
+  button:hover{border-color:var(--muted)}
+  button.primary{background:var(--amber);color:#1a1200;border-color:var(--amber);font-weight:600}
+  button.primary:hover{background:#ffc233;box-shadow:0 4px 18px rgba(255,176,0,.25)}
+  button:disabled{opacity:.4;cursor:not-allowed}
+
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+  .row .field{flex:1;min-width:120px}
+
+  /* spot bar */
+  .spotbar{display:flex;gap:24px;flex-wrap:wrap;align-items:center;padding:14px 18px;
+    background:var(--panel2);border:1px solid var(--border);border-radius:12px;margin-bottom:18px}
+  .spotbar .item{display:flex;flex-direction:column;gap:2px}
+  .spotbar .k{font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
+  .spotbar .v{font-family:var(--mono);font-size:18px;font-weight:600}
+  .spotbar .sym{font-family:var(--disp);font-weight:800;font-size:22px;color:var(--amber)}
+
+  /* tabs */
+  .tabs{display:flex;gap:4px;margin-bottom:18px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+  .tab{background:none;border:none;border-bottom:2px solid transparent;border-radius:0;padding:11px 16px;
+    color:var(--muted);font-family:var(--mono);font-size:12px;letter-spacing:.5px}
+  .tab:hover{color:var(--text)}
+  .tab.active{color:var(--amber);border-bottom-color:var(--amber)}
+
+  /* tables */
+  .tbl-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:12px}
+  table{border-collapse:collapse;width:100%;font-family:var(--mono);font-size:12.5px;white-space:nowrap}
+  th{position:sticky;top:0;background:var(--panel2);color:var(--muted);font-weight:500;text-align:right;
+    padding:10px 12px;font-size:10.5px;letter-spacing:.6px;text-transform:uppercase;border-bottom:1px solid var(--border);cursor:pointer;user-select:none}
+  th.l,td.l{text-align:left}
+  th:hover{color:var(--text)}
+  td{padding:8px 12px;text-align:right;border-bottom:1px solid var(--border-soft)}
+  tbody tr:hover{background:rgba(255,176,0,.04)}
+  tr.atm{background:rgba(255,176,0,.09)}
+  tr.atm:hover{background:rgba(255,176,0,.13)}
+  .itm td{color:#fff}
+  .otm td{color:var(--muted)}
+  .pos{color:var(--green)} .neg{color:var(--red)} .amb{color:var(--amber)}
+  .strike-cell{font-weight:600;color:var(--text)!important}
+  .badge{display:inline-block;font-size:9px;padding:1px 6px;border-radius:5px;letter-spacing:.5px;
+    border:1px solid var(--border)}
+  .badge.call{color:var(--green);border-color:var(--green-dim);background:var(--green-dim)}
+  .badge.put{color:var(--red);border-color:var(--red-dim);background:var(--red-dim)}
+
+  .hint{font-size:12px;color:var(--muted);font-family:var(--sans)}
+  .empty{text-align:center;color:var(--faint);padding:50px 20px;font-family:var(--mono);font-size:13px}
+  .err-box{background:var(--red-dim);border:1px solid var(--red);color:#ffd5d5;border-radius:10px;
+    padding:12px 14px;font-family:var(--mono);font-size:12.5px;margin-bottom:16px;display:none;white-space:normal;line-height:1.55}
+  .seg{display:inline-flex;background:var(--panel2);border:1px solid var(--border);border-radius:9px;padding:3px;gap:3px}
+  .seg button{border:none;background:none;padding:6px 14px;border-radius:6px;color:var(--muted)}
+  .seg button.active{background:var(--amber);color:#1a1200;font-weight:600}
+
+  /* analysis cards */
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
+  .stat{background:var(--panel2);border:1px solid var(--border);border-radius:11px;padding:14px}
+  .stat .k{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+  .stat .v{font-family:var(--mono);font-size:21px;font-weight:600}
+  .stat .sub{font-family:var(--mono);font-size:11px;color:var(--faint);margin-top:3px}
+
+  .disclaimer{font-size:11px;color:var(--faint);font-family:var(--mono);line-height:1.7;
+    border-top:1px solid var(--border);padding-top:20px;margin-top:40px}
+  .disclaimer b{color:var(--muted)}
+  a{color:var(--amber)}
+  details summary{cursor:pointer;color:var(--muted);font-family:var(--mono);font-size:12px;padding:4px 0}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:760px){.two{grid-template-columns:1fr}}
+  svg.payoff{width:100%;height:170px;background:var(--panel2);border:1px solid var(--border);border-radius:11px}
 </style>
 </head>
 <body>
+<div class="wrap">
 
-<div class="head">
-  <div>
-    <h1>🎯 Options Scanner</h1>
-    <div style="font-size:12px;color:var(--mut);margin-top:3px">ماسِح عقود الأوبشن — أداة فرز تعليمية، ليست توصية مالية</div>
+  <header>
+    <div class="brand">
+      <h1>Options<span class="dot">·</span>Desk</h1>
+      <span class="tag">Greeks &amp; Strategy Scanner</span>
+    </div>
+    <div class="status"><span class="led" id="led"></span><span id="statusTxt">Idle — configure provider</span></div>
+  </header>
+
+  <!-- CONFIG -->
+  <div class="panel">
+    <p class="panel-h">Connection</p>
+    <div class="row">
+      <div class="field" style="flex:0 0 160px">
+        <label>Data provider</label>
+        <select id="provider">
+          <option value="tradier">Tradier (browser-ready)</option>
+          <option value="polygon">Polygon.io</option>
+          <option value="finnhub">Finnhub</option>
+        </select>
+      </div>
+      <div class="field" style="flex:0 0 150px" id="envWrap">
+        <label>Environment</label>
+        <select id="env">
+          <option value="prod">Production</option>
+          <option value="sandbox">Sandbox (paper)</option>
+        </select>
+      </div>
+      <div class="field" style="flex:2;min-width:220px">
+        <label>API key / token <span class="amb">(kept in your browser only)</span></label>
+        <input id="apikey" type="password" placeholder="paste your API key here" autocomplete="off" />
+      </div>
+      <div class="field" style="flex:0 0 130px">
+        <label>Risk-free rate %</label>
+        <input id="rate" type="number" step="0.1" value="4.3" />
+      </div>
+      <button class="primary" id="saveCfg">Save</button>
+    </div>
+    <p class="hint" style="margin:12px 0 0">
+      🔒 Your key is stored locally in this browser (never uploaded, never committed to the repo). For a public repo, keep your key restricted on the provider side.
+    </p>
   </div>
-  <div style="display:flex;gap:8px;align-items:center">
-    <span class="badge" id="statusBadge">جاهز</span>
-    <span class="badge mono" id="clock">--:--</span>
+
+  <div class="err-box" id="errBox"></div>
+
+  <!-- LOOKUP -->
+  <div class="panel">
+    <p class="panel-h">Load chain</p>
+    <div class="row">
+      <div class="field" style="flex:0 0 150px">
+        <label>Ticker</label>
+        <input id="ticker" placeholder="AAPL" style="text-transform:uppercase" />
+      </div>
+      <button id="loadExp">Load expirations →</button>
+      <div class="field" style="flex:1;min-width:160px">
+        <label>Expiration</label>
+        <select id="expiration"><option value="">—</option></select>
+      </div>
+      <button class="primary" id="loadChain" disabled>Fetch chain</button>
+    </div>
   </div>
-</div>
 
-<div class="warn">
-  ⚠️ <b>الأوبشن أخطر من الأسهم.</b> العقد يخسر قيمته يومياً بسبب الوقت (Theta)، وممكن يصعد السهم وأنت خسران بسبب هبوط التذبذب (IV). أسعار العقود هنا <b>تقديرية</b> (محسوبة من تذبذب السهم بصيغة Black-Scholes) — للإرشاد فقط، أكّد السعر الفعلي من منصة التداول. تعليمي — جرّب على Paper Trading.
-</div>
-
-<div class="controls">
-  <button onclick="scan()" id="scanBtn">🔍 افحص وأعطني أفضل عقود اليوم</button>
-  <select id="dteSel">
-    <option value="0-21">انتهاء قصير (≤ 21 يوم)</option>
-    <option value="14-35" selected>متوسط (14-35 يوم)</option>
-    <option value="30-60">طويل (30-60 يوم)</option>
-  </select>
-</div>
-
-<div class="tabs">
-  <div class="tab on" data-f="all" onclick="setFilter('all')">الكل</div>
-  <div class="tab" data-f="call" onclick="setFilter('call')">🟢 CALL فقط</div>
-  <div class="tab" data-f="put" onclick="setFilter('put')">🔴 PUT فقط</div>
-</div>
-
-<!-- SCAN RESULTS -->
-<div class="card wide" style="margin-bottom:12px">
-  <h2>🔥 أفضل العقود — <span id="scanCount" class="mono" style="color:var(--mut)">اضغط «افحص»</span></h2>
-  <div id="scanProg" class="bar" style="display:none"><i id="scanBar" style="width:0%;background:var(--acc)"></i></div>
-  <div id="scanLoader" class="loader" style="display:none">جاري الفحص...</div>
-  <div style="overflow-x:auto">
-  <table id="scanTable" style="display:none"><thead><tr>
-    <th>#</th><th>الرمز</th><th>النوع</th><th>التقييم</th><th>سعر السهم</th>
-    <th>العقد</th><th>الانتهاء</th><th>السعر/العقد</th><th>التعادل</th>
-    <th>Delta</th><th>Theta/يوم</th><th>IV</th><th>OI</th>
-  </tr></thead><tbody id="scanBody"></tbody></table>
+  <!-- SPOT BAR -->
+  <div class="spotbar" id="spotbar" style="display:none">
+    <div class="item"><span class="k">Underlying</span><span class="sym" id="sbSym">—</span></div>
+    <div class="item"><span class="k">Spot</span><span class="v" id="sbSpot">—</span></div>
+    <div class="item"><span class="k">Expiration</span><span class="v" id="sbExp">—</span></div>
+    <div class="item"><span class="k">DTE</span><span class="v" id="sbDte">—</span></div>
+    <div class="item"><span class="k">Contracts</span><span class="v" id="sbCount">—</span></div>
   </div>
-  <div class="note">يفحص أسهماً نشطة، يحدد الاتجاه، ويختار لكل سهم أفضل عقد (CALL للصاعد / PUT للهابط) ضمن مدى الانتهاء المختار، ثم يرتّبهم بالتقييم. اضغط أي صف لتفاصيله.</div>
-</div>
 
-<!-- CONTRACT DETAIL -->
-<div class="card wide" id="detailCard" style="display:none;margin-bottom:12px">
-  <h2>📋 تفاصيل العقد — <span id="dTicker" class="mono">—</span></h2>
-  <div class="grid">
-    <div class="row"><span class="k">النوع</span><span class="v" id="dType">—</span></div>
-    <div class="row"><span class="k">سعر السهم الآن</span><span class="v mono" id="dSpot">—</span></div>
-    <div class="row"><span class="k">Strike</span><span class="v mono" id="dStrike">—</span></div>
-    <div class="row"><span class="k">الانتهاء</span><span class="v mono" id="dExp">—</span></div>
-    <div class="row"><span class="k">سعر العقد (Premium)</span><span class="v mono" id="dPrem">—</span></div>
-    <div class="row"><span class="k">تكلفة عقد واحد (×100)</span><span class="v mono" id="dCost">—</span></div>
-    <div class="row"><span class="k">نقطة التعادل</span><span class="v mono" id="dBE">—</span></div>
-    <div class="row"><span class="k">Delta (حساسية للسعر)</span><span class="v mono" id="dDelta">—</span></div>
-    <div class="row"><span class="k">Theta (خسارة يومية)</span><span class="v mono down" id="dTheta">—</span></div>
-    <div class="row"><span class="k">IV (التذبذب الضمني)</span><span class="v mono" id="dIV">—</span></div>
-    <div class="row"><span class="k">OI (الفائدة المفتوحة)</span><span class="v mono" id="dOI">—</span></div>
+  <!-- TABS -->
+  <div class="tabs" id="tabs" style="display:none">
+    <button class="tab active" data-tab="chain">Chain &amp; Greeks</button>
+    <button class="tab" data-tab="cc">Covered Calls</button>
+    <button class="tab" data-tab="vs">Vertical Spreads</button>
   </div>
-  <div class="note" id="dNote"></div>
-</div>
 
-<div class="note" style="text-align:center;margin:18px 0 8px">
-  بيانات مجانية متأخرة ~15 دقيقة • اليونانيات تقديرية (Black-Scholes مبسّط) • تعليمي فقط
+  <!-- CHAIN -->
+  <section id="tab-chain" class="tabpane">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px">
+      <div class="seg" id="sideSeg">
+        <button data-side="call" class="active">Calls</button>
+        <button data-side="put">Puts</button>
+      </div>
+      <span class="hint" id="greekNote"></span>
+    </div>
+    <div class="tbl-wrap"><table id="chainTbl"><thead></thead><tbody></tbody></table></div>
+  </section>
+
+  <!-- COVERED CALLS -->
+  <section id="tab-cc" class="tabpane" style="display:none">
+    <div class="row" style="margin-bottom:16px">
+      <div class="field" style="flex:0 0 160px">
+        <label>Your cost basis (optional)</label>
+        <input id="ccBasis" type="number" step="0.01" placeholder="defaults to spot" />
+      </div>
+      <div class="field" style="flex:0 0 150px">
+        <label>Min open interest</label>
+        <input id="ccMinOI" type="number" step="1" value="10" />
+      </div>
+      <div class="field" style="flex:0 0 170px">
+        <label>Sort by</label>
+        <select id="ccSort">
+          <option value="annStatic">Annualized return (static)</option>
+          <option value="annCalled">Annualized return (if called)</option>
+          <option value="protection">Downside protection</option>
+          <option value="premium">Premium yield</option>
+        </select>
+      </div>
+      <button class="primary" id="ccRun">Analyze</button>
+    </div>
+    <div class="tbl-wrap"><table id="ccTbl"><thead></thead><tbody></tbody></table></div>
+    <p class="hint" style="margin-top:10px">Out-of-the-money calls only. "If called" assumes shares are assigned at the strike. Assignment probability ≈ |delta|.</p>
+  </section>
+
+  <!-- VERTICAL SPREADS -->
+  <section id="tab-vs" class="tabpane" style="display:none">
+    <div class="row" style="margin-bottom:16px">
+      <div class="field" style="flex:0 0 210px">
+        <label>Strategy</label>
+        <select id="vsType">
+          <option value="bullCall">Bull Call (debit)</option>
+          <option value="bearPut">Bear Put (debit)</option>
+          <option value="bullPut">Bull Put (credit)</option>
+          <option value="bearCall">Bear Call (credit)</option>
+        </select>
+      </div>
+      <div class="field" style="flex:0 0 150px"><label>Long strike</label><select id="vsLong"></select></div>
+      <div class="field" style="flex:0 0 150px"><label>Short strike</label><select id="vsShort"></select></div>
+      <button class="primary" id="vsRun">Analyze</button>
+    </div>
+    <div class="two">
+      <div>
+        <div class="cards" id="vsCards"></div>
+      </div>
+      <svg class="payoff" id="vsPayoff" viewBox="0 0 400 170" preserveAspectRatio="none"></svg>
+    </div>
+    <p class="panel-h" style="margin:24px 0 12px">Scanner — top spreads by return-on-risk</p>
+    <div class="row" style="margin-bottom:14px">
+      <div class="field" style="flex:0 0 150px"><label>Max strike width</label><input id="vsWidth" type="number" step="1" value="10" /></div>
+      <div class="field" style="flex:0 0 150px"><label>Min reward/risk</label><input id="vsMinRR" type="number" step="0.1" value="0.4" /></div>
+      <button id="vsScan">Scan</button>
+    </div>
+    <div class="tbl-wrap"><table id="vsTbl"><thead></thead><tbody></tbody></table></div>
+  </section>
+
+  <p class="empty" id="emptyState">Configure your provider, then load a chain to begin.</p>
+
+  <div class="disclaimer">
+    <b>OptionsDesk</b> — a personal analysis tool. <b>Not financial advice.</b> Greeks and implied volatility are estimates;
+    when a provider does not return them, they are computed locally with a Black-Scholes model and may differ from your broker.
+    Options trading carries substantial risk of loss. Verify every number before trading. You are responsible for your own decisions.
+  </div>
 </div>
 
 <script>
-let FILTER='all', RESULTS=[];
-const $=id=>document.getElementById(id);
-const fmt=(n,d=2)=>n==null||isNaN(n)?'—':Number(n).toFixed(d);
-const PROXIES=[u=>'https://corsproxy.io/?url='+encodeURIComponent(u),
-               u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u), u=>u];
-setInterval(()=>{$('clock').textContent=new Date().toLocaleTimeString('en-GB')},1000);
+/* ============================================================
+   STATE
+============================================================ */
+const S = {
+  provider:'tradier', env:'prod', key:'', rate:0.043,
+  ticker:'', spot:null, expiration:'', dte:null,
+  chain:[], side:'call'
+};
+const $ = id => document.getElementById(id);
+const fmt = (n,d=2) => (n==null||isNaN(n)) ? '—' : Number(n).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+const pct = (n,d=2) => (n==null||isNaN(n)) ? '—' : (n*100).toFixed(d)+'%';
 
-// قائمة أسهم سائلة عليها أوبشن نشط
-const LIST=["AAPL","TSLA","NVDA","AMD","META","AMZN","MSFT","GOOGL","NFLX","INTC",
-  "SOFI","PLTR","F","NIO","AMC","RIOT","MARA","COIN","HOOD","SNAP",
-  "BAC","T","PFE","WBD","CCL","AAL","UBER","DIS","BABA","SQ",
-  "SPY","QQQ","IWM","XLF","SMH","GLD"];
+/* ---- persistence (graceful if storage blocked) ---- */
+function saveLocal(){ try{ localStorage.setItem('od_cfg', JSON.stringify({provider:S.provider,env:S.env,key:S.key,rate:S.rate})); }catch(e){} }
+function loadLocal(){ try{ const c=JSON.parse(localStorage.getItem('od_cfg')||'{}');
+  if(c.provider){S.provider=c.provider;$('provider').value=c.provider;}
+  if(c.env){S.env=c.env;$('env').value=c.env;}
+  if(c.key){S.key=c.key;$('apikey').value=c.key;}
+  if(c.rate){S.rate=c.rate;$('rate').value=(c.rate*100).toFixed(1);}
+}catch(e){} }
 
-function setFilter(f){FILTER=f;document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.f===f));render();}
-
-// ===== fetch مع مهلة + بروكسي =====
-async function tfetch(url,ms=9000){
-  const ctl=new AbortController();const id=setTimeout(()=>ctl.abort(),ms);
-  try{return await fetch(url,{signal:ctl.signal});}finally{clearTimeout(id);}
-}
-async function getJSON(path){
-  for(const p of PROXIES){
-    try{const r=await tfetch(p('https://query1.finance.yahoo.com'+path));
-      if(!r.ok)continue;const j=await r.json();if(j)return j;}catch(e){}
+/* ============================================================
+   BLACK–SCHOLES ENGINE (fallback when provider omits greeks)
+============================================================ */
+const BS = {
+  ncdf(x){ // Abramowitz-Stegun
+    const a1=0.254829592,a2=-0.284496736,a3=1.421413741,a4=-1.453152027,a5=1.061405429,p=0.3275911;
+    const s=x<0?-1:1; x=Math.abs(x)/Math.SQRT2;
+    const t=1/(1+p*x);
+    const y=1-(((((a5*t+a4)*t+a3)*t+a2)*t+a1)*t)*Math.exp(-x*x);
+    return 0.5*(1+s*y);
+  },
+  npdf(x){ return Math.exp(-0.5*x*x)/Math.sqrt(2*Math.PI); },
+  price(S0,K,T,r,sig,type){
+    if(T<=0||sig<=0) return Math.max(0, type==='call'? S0-K : K-S0);
+    const d1=(Math.log(S0/K)+(r+0.5*sig*sig)*T)/(sig*Math.sqrt(T));
+    const d2=d1-sig*Math.sqrt(T);
+    return type==='call'
+      ? S0*this.ncdf(d1)-K*Math.exp(-r*T)*this.ncdf(d2)
+      : K*Math.exp(-r*T)*this.ncdf(-d2)-S0*this.ncdf(-d1);
+  },
+  iv(mkt,S0,K,T,r,type){
+    if(mkt<=0||T<=0) return null;
+    let lo=1e-4, hi=5, mid;
+    for(let i=0;i<60;i++){
+      mid=(lo+hi)/2;
+      const p=this.price(S0,K,T,r,mid,type);
+      if(Math.abs(p-mkt)<1e-4) return mid;
+      if(p>mkt) hi=mid; else lo=mid;
+    }
+    return mid;
+  },
+  greeks(S0,K,T,r,sig,type){
+    if(T<=0||sig<=0||!sig) return {delta:null,gamma:null,theta:null,vega:null};
+    const sq=Math.sqrt(T);
+    const d1=(Math.log(S0/K)+(r+0.5*sig*sig)*T)/(sig*sq);
+    const d2=d1-sig*sq;
+    const delta=type==='call'?this.ncdf(d1):this.ncdf(d1)-1;
+    const gamma=this.npdf(d1)/(S0*sig*sq);
+    const vega=S0*this.npdf(d1)*sq/100; // per 1 vol point
+    const theta=( -(S0*this.npdf(d1)*sig)/(2*sq)
+      - (type==='call'?1:-1)*r*K*Math.exp(-r*T)*this.ncdf((type==='call'?d2:-d2)) )/365;
+    return {delta,gamma,theta,vega};
   }
-  return null;
-}
+};
 
-// ===== المؤشرات =====
-const ema=(a,p)=>{const k=2/(p+1);let e=a[0];return a.map(v=>e=v*k+e*(1-k));};
-function rsiLast(c,p=14){let g=0,l=0;for(let i=1;i<=p;i++){const d=c[i]-c[i-1];d>=0?g+=d:l-=d;}
-  g/=p;l/=p;for(let i=p+1;i<c.length;i++){const d=c[i]-c[i-1];g=(g*(p-1)+(d>0?d:0))/p;l=(l*(p-1)+(d<0?-d:0))/p;}
-  return 100-100/(1+g/(l||1e-9));}
-function macdH(c){const e12=ema(c,12),e26=ema(c,26);const m=c.map((_,i)=>e12[i]-e26[i]);return m.at(-1)-ema(m,9).at(-1);}
+/* ============================================================
+   STATUS + ERROR HELPERS
+============================================================ */
+function setStatus(txt,kind){ $('statusTxt').textContent=txt; const l=$('led'); l.className='led'+(kind?' '+kind:''); }
+function showErr(msg){ const b=$('errBox'); b.innerHTML=msg; b.style.display='block'; }
+function clearErr(){ $('errBox').style.display='none'; }
 
-// ===== Black-Scholes (تقدير اليونانيات) =====
-function normCDF(x){const t=1/(1+0.2316419*Math.abs(x));const d=0.3989423*Math.exp(-x*x/2);
-  let p=d*t*(0.3193815+t*(-0.3565638+t*(1.781478+t*(-1.821256+t*1.330274))));return x>0?1-p:p;}
-function greeks(S,K,T,vol,isCall,r=0.04){
-  if(T<=0||vol<=0||!S||!K)return{delta:0,theta:0};
-  const d1=(Math.log(S/K)+(r+vol*vol/2)*T)/(vol*Math.sqrt(T)),d2=d1-vol*Math.sqrt(T);
-  const pdf=0.3989423*Math.exp(-d1*d1/2);
-  if(isCall)return{delta:normCDF(d1),
-    theta:(-S*pdf*vol/(2*Math.sqrt(T))-r*K*Math.exp(-r*T)*normCDF(d2))/365};
-  return{delta:normCDF(d1)-1,
-    theta:(-S*pdf*vol/(2*Math.sqrt(T))+r*K*Math.exp(-r*T)*normCDF(-d2))/365};
-}
-
-// ===== تحديد اتجاه السهم =====
-function direction(bars){
-  const c=bars.map(x=>x.c),price=c.at(-1);
-  const e20=ema(c,20).at(-1),e50=ema(c,50).at(-1),R=rsiLast(c),H=macdH(c);
-  const avgV=bars.slice(-21,-1).reduce((a,x)=>a+x.v,0)/20,volx=bars.at(-1).v/(avgV||1);
-  let score=0;
-  const bull=price>e20&&e20>e50;
-  const bear=price<e20&&e20<e50;
-  if(bull)score+=30;else if(price>e20)score+=15;
-  if(H>0)score+=20;
-  if(R>=52&&R<=68)score+=20;else if(R>45&&R<72)score+=10;
-  if(volx>1.3)score+=20;else if(volx>1)score+=10;
-  if(bull&&H>0)score+=10;
-  score=Math.min(100,score);
-  let dir=null;
-  if(bull&&H>0&&R<72&&score>=55)dir='call';
-  else if(bear&&H<0&&R>28&&score<=45)dir='put';
-  return{dir,score,price,iv:null,volx,rsi:R};
-}
-
-// ===== جلب أفضل عقد للسهم =====
-// ===== حساب عقد مقترح ذاتياً من بيانات السهم (يشتغل دائماً، بدون سلسلة عقود) =====
-function estimateContract(bars,dir,spot,dteRange){
-  // التذبذب المحقّق السنوي من العوائد اليومية (بديل عن IV)
-  const c=bars.map(x=>x.c), rets=[];
-  for(let i=1;i<c.length;i++)rets.push(Math.log(c[i]/c[i-1]));
-  const mean=rets.reduce((a,b)=>a+b,0)/rets.length;
-  const sd=Math.sqrt(rets.reduce((a,b)=>a+(b-mean)**2,0)/rets.length);
-  let vol=sd*Math.sqrt(252);                 // تذبذب سنوي
-  vol=Math.max(0.15,Math.min(2.5,vol));      // حدود منطقية 15%-250%
-  const [dmin,dmax]=dteRange.split('-').map(Number);
-  const dte=Math.round((dmin+dmax)/2)||21;   // منتصف المدى
-  const T=dte/365;
-  // strike ~3% OTM (مدوّر لأقرب 0.5 أو 1)
-  const raw=dir==='call'?spot*1.03:spot*0.97;
-  const step=spot<25?0.5:spot<100?1:5;
-  const strike=Math.round(raw/step)*step;
-  // سعر العقد التقديري + اليونانيات (Black-Scholes)
-  const pr=bsPrice(spot,strike,T,vol,dir==='call');
-  const g=greeks(spot,strike,T,vol,dir==='call');
-  const be=dir==='call'?strike+pr:strike-pr;
-  // تاريخ انتهاء تقريبي
-  const expD=new Date(Date.now()+dte*86400e3).toISOString().slice(0,10);
-  return{strike,exp:expD,dte,prem:pr,iv:vol*100,oi:'—',vol:'—',
-    delta:g.delta,theta:g.theta,breakeven:be,estimated:true};
-}
-function bsPrice(S,K,T,vol,isCall,r=0.04){
-  if(T<=0||vol<=0)return Math.max(0,isCall?S-K:K-S);
-  const d1=(Math.log(S/K)+(r+vol*vol/2)*T)/(vol*Math.sqrt(T)),d2=d1-vol*Math.sqrt(T);
-  if(isCall)return S*normCDF(d1)-K*Math.exp(-r*T)*normCDF(d2);
-  return K*Math.exp(-r*T)*normCDF(-d2)-S*normCDF(-d1);
-}
-
-// ===== fetch شموع =====
-async function getBars(sym){
-  const j=await getJSON(`/v8/finance/chart/${sym}?interval=1d&range=6mo`);
-  const res=j?.chart?.result?.[0];if(!res)return null;
-  const t=res.timestamp,q=res.indicators.quote[0];const out=[];
-  for(let i=0;i<t.length;i++){if(q.close[i]==null)continue;
-    out.push({c:q.close[i],h:q.high[i],l:q.low[i],o:q.open[i],v:q.volume[i]||0});}
-  return out.length>55?out:null;
-}
-
-// ===== الماسح =====
-async function scan(){
-  $('scanBtn').disabled=true;$('scanBtn').textContent='جاري الفحص...';
-  $('scanProg').style.display='block';$('scanLoader').style.display='block';
-  $('scanTable').style.display='none';$('detailCard').style.display='none';
-  RESULTS=[];let done=0;
-  const dteRange=$('dteSel').value;
-  try{
-    const B=8;
-    for(let i=0;i<LIST.length;i+=B){
-      await Promise.all(LIST.slice(i,i+B).map(async sym=>{
-        const bars=await getBars(sym);done++;
-        $('scanBar').style.width=(done/LIST.length*100)+'%';
-        $('scanLoader').textContent=`تحليل ${done}/${LIST.length}`;
-        if(!bars)return;
-        const d=direction(bars);
-        if(d.dir){
-          const ct=estimateContract(bars,d.dir,d.price,dteRange);
-          RESULTS.push({sym,...d,contract:ct});
-        }
+/* ============================================================
+   PROVIDER ADAPTERS  → normalized chain rows
+   row = {type,strike,bid,ask,mid,last,volume,oi,iv,delta,gamma,theta,vega}
+============================================================ */
+const PROVIDERS = {
+  /* ---------- TRADIER ---------- */
+  tradier:{
+    base(){ return S.env==='sandbox' ? 'https://sandbox.tradier.com' : 'https://api.tradier.com'; },
+    headers(){ return {Authorization:'Bearer '+S.key, Accept:'application/json'}; },
+    async expirations(sym){
+      const r=await fetch(`${this.base()}/v1/markets/options/expirations?symbol=${sym}&includeAllRoots=true`,{headers:this.headers()});
+      if(!r.ok) throw new Error('Tradier '+r.status+' — check token/environment');
+      const j=await r.json();
+      const d=j.expirations&&j.expirations.date; return d?(Array.isArray(d)?d:[d]):[];
+    },
+    async spot(sym){
+      const r=await fetch(`${this.base()}/v1/markets/quotes?symbols=${sym}`,{headers:this.headers()});
+      const j=await r.json(); const q=j.quotes&&j.quotes.quote; return q?(q.last||q.close):null;
+    },
+    async chain(sym,exp){
+      const r=await fetch(`${this.base()}/v1/markets/options/chains?symbol=${sym}&expiration=${exp}&greeks=true`,{headers:this.headers()});
+      if(!r.ok) throw new Error('Tradier '+r.status+' — could not load chain');
+      const j=await r.json();
+      let o=j.options&&j.options.option; if(!o) return [];
+      if(!Array.isArray(o)) o=[o];
+      return o.map(x=>({
+        type:x.option_type, strike:+x.strike,
+        bid:+x.bid, ask:+x.ask, last:+x.last,
+        volume:+x.volume||0, oi:+x.open_interest||0,
+        iv: x.greeks? x.greeks.mid_iv : null,
+        delta:x.greeks?x.greeks.delta:null, gamma:x.greeks?x.greeks.gamma:null,
+        theta:x.greeks?x.greeks.theta/365:null, vega:x.greeks?x.greeks.vega/100:null
       }));
     }
-    RESULTS.sort((a,b)=>b.score-a.score);
-    render();
-    if(!RESULTS.length)$('scanLoader').textContent='ما طلعت فرص واضحة الآن (السوق متذبذب أو مقفول). جرّب وقت فتح السوق.';
-    else $('scanLoader').style.display='none';
-  }catch(e){$('scanLoader').textContent='خطأ: '+e.message;}
-  finally{$('scanBtn').disabled=false;$('scanBtn').textContent='🔍 افحص وأعطني أفضل عقود اليوم';$('scanProg').style.display='none';}
+  },
+  /* ---------- POLYGON ---------- */
+  polygon:{
+    async expirations(sym){
+      const r=await fetch(`https://api.polygon.io/v3/reference/options/contracts?underlying_ticker=${sym}&limit=1000&apiKey=${S.key}`);
+      if(!r.ok) throw new Error('Polygon '+r.status+' — check API key');
+      const j=await r.json();
+      const set=new Set((j.results||[]).map(c=>c.expiration_date));
+      return [...set].sort();
+    },
+    spotCache:null,
+    async chain(sym,exp){
+      let url=`https://api.polygon.io/v3/snapshot/options/${sym}?expiration_date=${exp}&limit=250&apiKey=${S.key}`;
+      let out=[], guard=0;
+      while(url && guard<6){
+        const r=await fetch(url);
+        if(!r.ok) throw new Error('Polygon '+r.status+' — check plan/key (greeks need a paid plan)');
+        const j=await r.json();
+        (j.results||[]).forEach(c=>{
+          if(c.underlying_asset&&c.underlying_asset.price) this.spotCache=c.underlying_asset.price;
+          const q=c.last_quote||{};
+          out.push({
+            type:c.details.contract_type, strike:+c.details.strike_price,
+            bid:+q.bid||0, ask:+q.ask||0, last:c.day?+c.day.close||0:0,
+            volume:c.day?+c.day.volume||0:0, oi:+c.open_interest||0,
+            iv:c.implied_volatility||null,
+            delta:c.greeks?c.greeks.delta:null, gamma:c.greeks?c.greeks.gamma:null,
+            theta:c.greeks?c.greeks.theta/365:null, vega:c.greeks?c.greeks.vega/100:null
+          });
+        });
+        url = j.next_url ? j.next_url+`&apiKey=${S.key}` : null; guard++;
+      }
+      return out;
+    },
+    async spot(){ return this.spotCache; }
+  },
+  /* ---------- FINNHUB ---------- */
+  finnhub:{
+    cache:null,
+    async _fetch(sym){
+      const r=await fetch(`https://finnhub.io/api/v1/stock/option-chain?symbol=${sym}&token=${S.key}`);
+      if(!r.ok) throw new Error('Finnhub '+r.status+' — options chain is a premium endpoint');
+      this.cache=await r.json(); return this.cache;
+    },
+    async expirations(sym){ const j=await this._fetch(sym); return (j.data||[]).map(d=>d.expirationDate); },
+    async spot(sym){
+      const r=await fetch(`https://finnhub.io/api/v1/quote?symbol=${sym}&token=${S.key}`);
+      const j=await r.json(); return j.c||null;
+    },
+    async chain(sym,exp){
+      const j=this.cache||await this._fetch(sym);
+      const day=(j.data||[]).find(d=>d.expirationDate===exp); if(!day) return [];
+      const map=(arr,type)=>(arr||[]).map(x=>({
+        type, strike:+x.strike, bid:+x.bid||0, ask:+x.ask||0, last:+x.lastPrice||0,
+        volume:+x.volume||0, oi:+x.openInterest||0, iv:x.impliedVolatility||null,
+        delta:x.delta??null, gamma:x.gamma??null, theta:x.theta??null, vega:x.vega??null
+      }));
+      const o=day.options||{};
+      return [...map(o.CALL,'call'), ...map(o.PUT,'put')];
+    }
+  }
+};
+
+/* ============================================================
+   ENRICH: fill missing greeks via Black-Scholes
+============================================================ */
+function midOf(o){ const m=(o.bid>0&&o.ask>0)?(o.bid+o.ask)/2:(o.last||0); return m; }
+function enrich(chain){
+  const T=S.dte/365;
+  chain.forEach(o=>{
+    o.mid=midOf(o);
+    let iv=o.iv;
+    if((iv==null||isNaN(iv)||iv<=0) && o.mid>0 && S.spot){
+      iv=BS.iv(o.mid,S.spot,o.strike,T,S.rate,o.type); o.iv=iv;
+    }
+    if((o.delta==null||isNaN(o.delta)) && iv && S.spot){
+      const g=BS.greeks(S.spot,o.strike,T,S.rate,iv,o.type);
+      o.delta=g.delta; o.gamma=g.gamma; o.theta=g.theta; o.vega=g.vega;
+    }
+  });
+  return chain;
 }
 
-function render(){
-  let view=RESULTS.slice();
-  if(FILTER!=='all')view=view.filter(r=>r.dir===FILTER);
-  $('scanCount').textContent=`${view.length} عقد`;$('scanCount').style.color='var(--acc)';
-  if(!view.length){$('scanBody').innerHTML='<tr><td colspan="13" class="loader">لا عقود مطابقة.</td></tr>';
-    $('scanTable').style.display='table';return;}
-  const sc=s=>s>=70?'up':s>=50?'neu':'down';
-  $('scanBody').innerHTML=view.map((r,i)=>{const c=r.contract;
-    return `<tr style="cursor:pointer" onclick="showDetail(${RESULTS.indexOf(r)})">
-      <td class="mono">${i+1}</td><td class="mono" style="font-weight:700">${r.sym}</td>
-      <td><span class="tag ${r.dir}">${r.dir.toUpperCase()}</span></td>
-      <td class="mono ${sc(r.score)}" style="font-weight:700">${r.score}</td>
-      <td class="mono">$${fmt(r.price)}</td>
-      <td class="mono">${fmt(c.strike,0)}${r.dir==='call'?'C':'P'}</td>
-      <td class="mono">${c.dte}d</td>
-      <td class="mono">$${fmt(c.prem)}</td>
-      <td class="mono">$${fmt(c.breakeven)}</td>
-      <td class="mono">${fmt(c.delta,2)}</td>
-      <td class="mono down">$${fmt(c.theta,3)}</td>
-      <td class="mono">${fmt(c.iv,0)}%</td>
-      <td class="mono">${c.oi}</td></tr>`;}).join('');
-  $('scanTable').style.display='table';
+/* ============================================================
+   LOAD FLOW
+============================================================ */
+$('saveCfg').onclick=()=>{
+  S.provider=$('provider').value; S.env=$('env').value;
+  S.key=$('apikey').value.trim(); S.rate=(+$('rate').value||4.3)/100;
+  if(!S.key){ showErr('Please paste an API key first.'); return; }
+  clearErr(); saveLocal(); setStatus('Configured — '+S.provider,'ok');
+};
+$('provider').onchange=()=>{ $('envWrap').style.display = $('provider').value==='tradier'?'block':'none'; };
+
+$('loadExp').onclick=async()=>{
+  const sym=$('ticker').value.trim().toUpperCase(); if(!sym){showErr('Enter a ticker.');return;}
+  if(!S.key){showErr('Save your API key first.');return;}
+  S.ticker=sym; clearErr(); setStatus('Loading expirations…','busy');
+  try{
+    const exps=await PROVIDERS[S.provider].expirations(sym);
+    if(!exps.length){ showErr('No expirations returned for '+sym+'.'); setStatus('No data','err'); return; }
+    const sel=$('expiration'); sel.innerHTML='';
+    exps.forEach(e=>{ const o=document.createElement('option'); o.value=e; o.textContent=e; sel.appendChild(o); });
+    $('loadChain').disabled=false;
+    setStatus(exps.length+' expirations loaded','ok');
+  }catch(e){ handleNetErr(e); }
+};
+
+$('loadChain').onclick=async()=>{
+  const exp=$('expiration').value; if(!exp){showErr('Pick an expiration.');return;}
+  S.expiration=exp; clearErr(); setStatus('Fetching chain…','busy');
+  try{
+    S.dte=Math.max(0.5,(new Date(exp+'T16:00:00')-new Date())/86400000);
+    let spot=await PROVIDERS[S.provider].spot(S.ticker);
+    let chain=await PROVIDERS[S.provider].chain(S.ticker,exp);
+    if(!spot && S.provider==='polygon') spot=PROVIDERS.polygon.spotCache;
+    S.spot=spot; S.chain=enrich(chain);
+    if(!S.chain.length){ showErr('Chain came back empty.'); setStatus('Empty','err'); return; }
+    renderAll();
+    setStatus('Loaded '+S.chain.length+' contracts','ok');
+  }catch(e){ handleNetErr(e); }
+};
+
+function handleNetErr(e){
+  console.error(e);
+  let msg='<b>Request failed:</b> '+(e.message||e);
+  if(String(e).includes('Failed to fetch')||e.name==='TypeError'){
+    msg+='<br>This is usually a <b>CORS</b> or network block. Tradier supports direct browser calls; '
+      +'Polygon/Finnhub may need a CORS-friendly plan or a small proxy. Also double-check the key and that you clicked <b>Save</b>.';
+  }
+  showErr(msg); setStatus('Error','err');
 }
 
-function showDetail(idx){
-  const r=RESULTS[idx];if(!r)return;const c=r.contract;
-  $('detailCard').style.display='block';
-  $('dTicker').textContent=r.sym;
-  $('dType').innerHTML=`<span class="tag ${r.dir}">${r.dir.toUpperCase()}</span>`;
-  $('dSpot').textContent='$'+fmt(r.price);
-  $('dStrike').textContent=fmt(c.strike,1);
-  $('dExp').textContent=`${c.exp} (${c.dte} يوم)`;
-  $('dPrem').textContent='$'+fmt(c.prem);
-  $('dCost').textContent='$'+fmt(c.prem*100);
-  $('dBE').textContent='$'+fmt(c.breakeven);
-  $('dDelta').textContent=fmt(c.delta,3);
-  $('dTheta').textContent='$'+fmt(c.theta,3)+'/يوم';
-  $('dIV').textContent=fmt(c.iv,1)+'%';
-  $('dOI').textContent='غير متاح مجاناً';
-  const moveNeeded=Math.abs(c.breakeven-r.price)/r.price*100;
-  $('dNote').innerHTML=`لتربح، يحتاج السهم يتحرّك ${r.dir==='call'?'صعوداً':'هبوطاً'} ليتجاوز التعادل ($${fmt(c.breakeven)}) — أي حركة ~${fmt(moveNeeded,1)}% قبل الانتهاء. `+
-    `العقد يخسر ~$${fmt(Math.abs(c.theta*100),2)} يومياً بسبب الوقت. `+
-    `<b>تذكّر: حتى لو تحرّك السهم في اتجاهك، هبوط IV ممكن يقلّل ربحك.</b>`;
-  $('detailCard').scrollIntoView({behavior:'smooth',block:'center'});
+/* ============================================================
+   RENDER
+============================================================ */
+function renderAll(){
+  $('emptyState').style.display='none';
+  $('spotbar').style.display='flex'; $('tabs').style.display='flex';
+  $('sbSym').textContent=S.ticker; $('sbSpot').textContent='$'+fmt(S.spot);
+  $('sbExp').textContent=S.expiration; $('sbDte').textContent=Math.round(S.dte)+'d';
+  $('sbCount').textContent=S.chain.length;
+  const computed=S.chain.some(o=>o.iv&&!o._hadGreeks);
+  $('greekNote').textContent = 'Greeks: '+(providerSuppliesGreeks()?'from provider':'computed (Black-Scholes)');
+  renderChain(); populateStrikeSelectors();
 }
+function providerSuppliesGreeks(){ return S.chain.some(o=>o.delta!=null && o.iv!=null); }
+
+let chainSort={key:'strike',dir:1};
+function renderChain(){
+  const cols=[
+    ['strike','Strike','l'],['bid','Bid'],['ask','Ask'],['mid','Mid'],
+    ['volume','Vol'],['oi','OI'],['iv','IV'],['delta','Δ'],['gamma','Γ'],['theta','Θ'],['vega','ν']
+  ];
+  const thead=$('chainTbl').querySelector('thead');
+  thead.innerHTML='<tr>'+cols.map(c=>`<th class="${c[2]||''}" data-k="${c[0]}">${c[1]}</th>`).join('')+'</tr>';
+  thead.querySelectorAll('th').forEach(th=>th.onclick=()=>{
+    const k=th.dataset.k; chainSort.dir = chainSort.key===k? -chainSort.dir : 1; chainSort.key=k; renderChain();
+  });
+  let rows=S.chain.filter(o=>o.type===S.side).slice();
+  rows.sort((a,b)=>(a[chainSort.key]-b[chainSort.key])*chainSort.dir);
+  // ATM = strike closest to spot
+  let atm=null,best=1e9; rows.forEach(o=>{const d=Math.abs(o.strike-S.spot); if(d<best){best=d;atm=o.strike;}});
+  const tb=$('chainTbl').querySelector('tbody'); tb.innerHTML='';
+  rows.forEach(o=>{
+    const itm = S.side==='call' ? o.strike<S.spot : o.strike>S.spot;
+    const tr=document.createElement('tr');
+    tr.className=(o.strike===atm?'atm ':'')+(itm?'itm':'otm');
+    tr.innerHTML=`<td class="l strike-cell">${fmt(o.strike)}</td>
+      <td>${fmt(o.bid)}</td><td>${fmt(o.ask)}</td><td class="amb">${fmt(o.mid)}</td>
+      <td>${o.volume||0}</td><td>${o.oi||0}</td>
+      <td>${o.iv?pct(o.iv,1):'—'}</td>
+      <td class="${o.delta>0?'pos':'neg'}">${fmt(o.delta,3)}</td>
+      <td>${fmt(o.gamma,4)}</td>
+      <td class="neg">${fmt(o.theta,3)}</td>
+      <td>${fmt(o.vega,3)}</td>`;
+    tb.appendChild(tr);
+  });
+}
+
+/* ---- side toggle ---- */
+$('sideSeg').querySelectorAll('button').forEach(b=>b.onclick=()=>{
+  $('sideSeg').querySelectorAll('button').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active'); S.side=b.dataset.side; renderChain();
+});
+
+/* ============================================================
+   COVERED CALLS
+============================================================ */
+$('ccRun').onclick=()=>{
+  if(!S.chain.length){showErr('Load a chain first.');return;}
+  const basis=+$('ccBasis').value || S.spot;
+  const minOI=+$('ccMinOI').value||0;
+  const T=S.dte/365, days=S.dte;
+  let rows=S.chain.filter(o=>o.type==='call'&&o.strike>=S.spot&&o.oi>=minOI&&o.mid>0).map(o=>{
+    const prem=o.mid;
+    const staticRet=prem/basis;
+    const calledRet=(prem+(o.strike-basis))/basis;
+    const protection=prem/S.spot;
+    const ann=staticRet*(365/days);
+    const annCalled=calledRet*(365/days);
+    return {strike:o.strike,prem,staticRet,calledRet,protection,ann,annCalled,
+      breakeven:basis-prem,assign:Math.abs(o.delta||0),oi:o.oi,iv:o.iv};
+  });
+  const sortKey={annStatic:'ann',annCalled:'annCalled',protection:'protection',premium:'staticRet'}[$('ccSort').value];
+  rows.sort((a,b)=>b[sortKey]-a[sortKey]);
+  const thead=$('ccTbl').querySelector('thead');
+  thead.innerHTML='<tr><th class="l">Strike</th><th>Premium</th><th>Yield</th><th>Ann. (static)</th><th>If-called</th><th>Ann. if-called</th><th>Downside prot.</th><th>Breakeven</th><th>Assign≈</th><th>OI</th></tr>';
+  const tb=$('ccTbl').querySelector('tbody'); tb.innerHTML='';
+  rows.slice(0,40).forEach((r,i)=>{
+    const tr=document.createElement('tr'); if(i===0)tr.className='atm';
+    tr.innerHTML=`<td class="l strike-cell">${fmt(r.strike)}</td>
+      <td class="amb">${fmt(r.prem)}</td>
+      <td class="pos">${pct(r.staticRet)}</td>
+      <td class="pos">${pct(r.ann)}</td>
+      <td>${pct(r.calledRet)}</td>
+      <td>${pct(r.annCalled)}</td>
+      <td>${pct(r.protection)}</td>
+      <td>${fmt(r.breakeven)}</td>
+      <td>${pct(r.assign,0)}</td>
+      <td>${r.oi}</td>`;
+    tb.appendChild(tr);
+  });
+  if(!rows.length) showErr('No OTM calls matched your filters.'); else clearErr();
+};
+
+/* ============================================================
+   VERTICAL SPREADS
+============================================================ */
+function strikesFor(type){ return [...new Set(S.chain.filter(o=>o.type===type).map(o=>o.strike))].sort((a,b)=>a-b); }
+function legType(strategy){ return (strategy==='bullCall'||strategy==='bearCall')?'call':'put'; }
+function findLeg(type,strike){ return S.chain.find(o=>o.type===type&&o.strike===strike); }
+
+function populateStrikeSelectors(){ refreshVsStrikes(); }
+function refreshVsStrikes(){
+  const type=legType($('vsType').value);
+  const ks=strikesFor(type);
+  const fill=sel=>{ sel.innerHTML=ks.map(k=>`<option value="${k}">${fmt(k)}</option>`).join(''); };
+  fill($('vsLong')); fill($('vsShort'));
+  // sensible defaults around spot
+  const near=ks.reduce((p,c)=>Math.abs(c-S.spot)<Math.abs(p-S.spot)?c:p,ks[0]);
+  const idx=ks.indexOf(near);
+  $('vsLong').value=ks[Math.max(0,idx)]; $('vsShort').value=ks[Math.min(ks.length-1,idx+1)];
+}
+$('vsType').onchange=refreshVsStrikes;
+
+function analyzeSpread(strategy,kLong,kShort){
+  const type=legType(strategy);
+  const L=findLeg(type,kLong), Sh=findLeg(type,kShort);
+  if(!L||!Sh) return null;
+  const debit = L.mid - Sh.mid;           // +ve = net debit, -ve = net credit
+  const width = Math.abs(kShort-kLong);
+  let maxProfit,maxLoss,breakeven,net,kind;
+  if(strategy==='bullCall'||strategy==='bearPut'){ // debit spreads
+    net=debit; kind='debit';
+    maxLoss=Math.abs(net);
+    maxProfit=width-Math.abs(net);
+    breakeven = strategy==='bullCall' ? Math.min(kLong,kShort)+Math.abs(net)
+                                      : Math.max(kLong,kShort)-Math.abs(net);
+  }else{ // credit spreads: short the nearer strike
+    net=-debit; kind='credit';
+    maxProfit=Math.abs(net);
+    maxLoss=width-Math.abs(net);
+    breakeven = strategy==='bullPut' ? Math.max(kLong,kShort)-Math.abs(net)
+                                     : Math.min(kLong,kShort)+Math.abs(net);
+  }
+  const rr = maxLoss>0 ? maxProfit/maxLoss : null;
+  return {strategy,type,kLong,kShort,width,net,kind,maxProfit,maxLoss,breakeven,rr,
+    deltaL:L.delta,deltaS:Sh.delta};
+}
+
+$('vsRun').onclick=()=>{
+  const r=analyzeSpread($('vsType').value,+$('vsLong').value,+$('vsShort').value);
+  if(!r){showErr('Selected strikes not found in chain.');return;} clearErr();
+  const c=[
+    ['Net '+r.kind,'$'+fmt(Math.abs(r.net)*100,2),'per contract'],
+    ['Max profit','$'+fmt(r.maxProfit*100,2), pct(r.maxProfit*100/(r.maxLoss*100||1),0)+' on risk'],
+    ['Max loss','$'+fmt(r.maxLoss*100,2),'capital at risk'],
+    ['Breakeven','$'+fmt(r.breakeven),'at expiration'],
+    ['Reward / risk', r.rr?fmt(r.rr,2)+'×':'—',''],
+    ['Width','$'+fmt(r.width),r.type+' spread']
+  ];
+  $('vsCards').innerHTML=c.map(x=>`<div class="stat"><div class="k">${x[0]}</div><div class="v">${x[1]}</div><div class="sub">${x[2]}</div></div>`).join('');
+  drawPayoff(r);
+};
+
+function drawPayoff(r){
+  const lo=Math.min(r.kLong,r.kShort)-r.width, hi=Math.max(r.kLong,r.kShort)+r.width;
+  const dbt=Math.abs(r.net); // net premium per share (debit or credit)
+  const kl=Math.min(r.kLong,r.kShort), kh=Math.max(r.kLong,r.kShort);
+  const pl=p=>{ // P/L per share at expiration price p
+    if(r.strategy==='bullCall') return (Math.max(0,p-kl)-Math.max(0,p-kh))-dbt;
+    if(r.strategy==='bearPut')  return (Math.max(0,kh-p)-Math.max(0,kl-p))-dbt;
+    if(r.strategy==='bullPut')  return dbt-(Math.max(0,kh-p)-Math.max(0,kl-p));
+    return dbt-(Math.max(0,p-kl)-Math.max(0,p-kh)); // bearCall
+  };
+  const N=60, pts=[]; let mn=1e9,mx=-1e9;
+  for(let i=0;i<=N;i++){ const p=lo+(hi-lo)*i/N; const v=pl(p); pts.push([p,v]); mn=Math.min(mn,v);mx=Math.max(mx,v); }
+  const W=400,H=170,pad=10;
+  const x=p=>pad+(p-lo)/(hi-lo)*(W-2*pad);
+  const y=v=>H-pad-(v-mn)/((mx-mn)||1)*(H-2*pad);
+  const zero=y(0);
+  let path=pts.map((pt,i)=>(i?'L':'M')+x(pt[0]).toFixed(1)+' '+y(pt[1]).toFixed(1)).join(' ');
+  const sx=x(S.spot);
+  $('vsPayoff').innerHTML=`
+    <line x1="${pad}" y1="${zero}" x2="${W-pad}" y2="${zero}" stroke="#3a434e" stroke-dasharray="3 3"/>
+    <line x1="${sx}" y1="${pad}" x2="${sx}" y2="${H-pad}" stroke="#5fa3ff" stroke-dasharray="2 4" opacity=".6"/>
+    <path d="${path}" fill="none" stroke="#ffb000" stroke-width="2"/>
+    <text x="${sx+3}" y="${pad+10}" fill="#5fa3ff" font-size="9" font-family="monospace">spot ${fmt(S.spot,0)}</text>`;
+}
+
+$('vsScan').onclick=()=>{
+  if(!S.chain.length){showErr('Load a chain first.');return;}
+  const strategy=$('vsType').value, type=legType(strategy);
+  const maxW=+$('vsWidth').value||999, minRR=+$('vsMinRR').value||0;
+  const ks=strikesFor(type); let res=[];
+  for(let i=0;i<ks.length;i++) for(let j=0;j<ks.length;j++){
+    if(i===j) continue;
+    const w=Math.abs(ks[i]-ks[j]); if(w===0||w>maxW) continue;
+    // assign long/short per strategy directionality
+    let kLong,kShort;
+    if(strategy==='bullCall'){ kLong=Math.min(ks[i],ks[j]); kShort=Math.max(ks[i],ks[j]); }
+    else if(strategy==='bearPut'){ kLong=Math.max(ks[i],ks[j]); kShort=Math.min(ks[i],ks[j]); }
+    else if(strategy==='bullPut'){ kShort=Math.max(ks[i],ks[j]); kLong=Math.min(ks[i],ks[j]); }
+    else { kShort=Math.min(ks[i],ks[j]); kLong=Math.max(ks[i],ks[j]); }
+    const r=analyzeSpread(strategy,kLong,kShort);
+    if(r&&r.rr&&r.maxProfit>0&&r.rr>=minRR&&r.maxLoss>0) res.push(r);
+  }
+  // dedupe by strike pair
+  const seen=new Set(); res=res.filter(r=>{const k=r.kLong+'|'+r.kShort; if(seen.has(k))return false;seen.add(k);return true;});
+  res.sort((a,b)=>b.rr-a.rr);
+  const thead=$('vsTbl').querySelector('thead');
+  thead.innerHTML='<tr><th class="l">Long</th><th class="l">Short</th><th>Width</th><th>Net</th><th>Max profit</th><th>Max loss</th><th>R/R</th><th>Breakeven</th></tr>';
+  const tb=$('vsTbl').querySelector('tbody'); tb.innerHTML='';
+  res.slice(0,25).forEach((r,i)=>{
+    const tr=document.createElement('tr'); if(i===0)tr.className='atm';
+    tr.style.cursor='pointer';
+    tr.onclick=()=>{ $('vsLong').value=r.kLong; $('vsShort').value=r.kShort; $('vsRun').click(); window.scrollTo({top:$('tab-vs').offsetTop-40,behavior:'smooth'}); };
+    tr.innerHTML=`<td class="l strike-cell">${fmt(r.kLong)}</td><td class="l strike-cell">${fmt(r.kShort)}</td>
+      <td>${fmt(r.width)}</td>
+      <td class="${r.kind==='credit'?'pos':'amb'}">${r.kind==='credit'?'+':'−'}$${fmt(Math.abs(r.net)*100,0)}</td>
+      <td class="pos">$${fmt(r.maxProfit*100,0)}</td>
+      <td class="neg">$${fmt(r.maxLoss*100,0)}</td>
+      <td class="amb">${fmt(r.rr,2)}×</td>
+      <td>${fmt(r.breakeven)}</td>`;
+    tb.appendChild(tr);
+  });
+  if(!res.length) showErr('No spreads matched your scan filters.'); else clearErr();
+};
+
+/* ============================================================
+   TABS
+============================================================ */
+$('tabs').querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
+  $('tabs').querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active');
+  document.querySelectorAll('.tabpane').forEach(p=>p.style.display='none');
+  $('tab-'+t.dataset.tab).style.display='block';
+});
+
+/* init */
+loadLocal();
+$('provider').dispatchEvent(new Event('change'));
+if(S.key) setStatus('Configured — '+S.provider,'ok');
 </script>
 </body>
 </html>
