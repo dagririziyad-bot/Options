@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Options Scanner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b0a07; --panel:#16130c; --panel2:#1e1a10; --line:#2c2615;
+  --txt:#f5efe2; --mut:#9a8e6f; --acc:#ffb627; --gold:#ffd24d;
+  --grn:#4be38a; --red:#ff5b5b; --blu:#6fb4ff; --amb:#ffb627;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:
+  radial-gradient(1100px 480px at 85% -10%,rgba(255,182,39,.07),transparent),
+  radial-gradient(800px 360px at 0% 0%,rgba(255,210,77,.04),transparent),
+  var(--bg);
+  color:var(--txt);font-family:'IBM Plex Sans Arabic',sans-serif;font-size:14px;
+  line-height:1.5;padding:14px;max-width:1400px;margin:0 auto;min-height:100vh}
+.mono{font-family:'Space Mono',monospace;direction:ltr}
+h1{font-size:21px;font-weight:700;letter-spacing:.3px}
+h2{font-size:14px;color:var(--acc);margin-bottom:10px;font-weight:700}
+.head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;
+  padding:16px 18px;background:linear-gradient(135deg,rgba(255,182,39,.08),#16130c 45%,#110f09);
+  border:1px solid var(--line);border-radius:16px;margin-bottom:12px;
+  box-shadow:0 10px 30px -18px rgba(255,182,39,.45)}
+.badge{font-size:11px;padding:3px 9px;border-radius:20px;background:#241f12;color:var(--mut);border:1px solid var(--line)}
+.badge.live{color:var(--gold);border-color:var(--gold)}
+.controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+input,select{background:var(--panel2);border:1px solid var(--line);color:var(--txt);
+  padding:9px 12px;border-radius:9px;font-family:'Space Mono',monospace;font-size:14px}
+input:focus,select:focus{outline:none;border-color:var(--acc)}
+button{background:var(--acc);color:#1a1400;border:none;padding:10px 18px;border-radius:9px;
+  font-weight:700;cursor:pointer;font-family:inherit;font-size:13px;transition:.15s}
+button:hover{filter:brightness(1.08)}
+button:disabled{opacity:.6;cursor:default}
+button.ghost{background:var(--panel2);color:var(--txt);border:1px solid var(--line)}
+.tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.tab{padding:7px 14px;border-radius:9px;background:var(--panel2);border:1px solid var(--line);
+  cursor:pointer;font-size:13px;color:var(--mut)}
+.tab.on{background:var(--acc);color:#1a1400;font-weight:700;border-color:var(--acc)}
+.card{background:linear-gradient(180deg,#17140d,#110f09);border:1px solid var(--line);
+  border-radius:16px;padding:16px;box-shadow:0 8px 24px -20px rgba(0,0,0,.8)}
+.card.wide{grid-column:1/-1}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+.row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #221d11}
+.row:last-child{border-bottom:none}
+.row .k{color:var(--mut);font-size:13px}
+.row .v{font-family:'Space Mono',monospace;font-weight:700}
+.up{color:var(--grn)} .down{color:var(--red)} .neu{color:var(--amb)}
+.warn{background:rgba(255,182,39,.07);border:1px solid rgba(255,182,39,.4);color:var(--amb);
+  padding:10px 14px;border-radius:10px;font-size:12px;margin-bottom:12px;line-height:1.7}
+.bar{height:8px;background:#221d11;border-radius:5px;overflow:hidden;margin-top:4px}
+.bar>i{display:block;height:100%;border-radius:5px;transition:width .4s}
+.note{font-size:12px;color:var(--mut);margin-top:8px;line-height:1.7}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{padding:8px 7px;text-align:right;border-bottom:1px solid #221d11;white-space:nowrap}
+th{color:var(--mut);font-weight:500}
+td.mono{direction:ltr;text-align:left}
+tbody tr{transition:background .12s}
+tbody tr:hover{background:rgba(255,182,39,.06)}
+.loader{color:var(--mut);font-size:13px;padding:8px 0}
+.tag{display:inline-block;padding:2px 9px;border-radius:7px;font-weight:700;font-size:11px}
+.tag.call{background:rgba(75,227,138,.15);color:var(--grn);border:1px solid var(--grn)}
+.tag.put{background:rgba(255,91,91,.15);color:var(--red);border:1px solid var(--red)}
+@media(max-width:640px){h1{font-size:17px} .head{padding:13px}}
+</style>
+</head>
+<body>
+
+<div class="head">
+  <div>
+    <h1>🎯 Options Scanner</h1>
+    <div style="font-size:12px;color:var(--mut);margin-top:3px">ماسِح عقود الأوبشن — أداة فرز تعليمية، ليست توصية مالية</div>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <span class="badge" id="statusBadge">جاهز</span>
+    <span class="badge mono" id="clock">--:--</span>
+  </div>
+</div>
+
+<div class="warn">
+  ⚠️ <b>الأوبشن أخطر من الأسهم.</b> العقد يخسر قيمته يومياً بسبب الوقت (Theta)، وممكن يصعد السهم وأنت خسران بسبب هبوط التذبذب (IV). البيانات من Yahoo ومتأخرة ~15 دقيقة. تعليمي فقط — جرّب على Paper Trading.
+</div>
+
+<div class="controls">
+  <button onclick="scan()" id="scanBtn">🔍 افحص وأعطني أفضل عقود اليوم</button>
+  <select id="dteSel">
+    <option value="0-21">انتهاء قصير (≤ 21 يوم)</option>
+    <option value="14-35" selected>متوسط (14-35 يوم)</option>
+    <option value="30-60">طويل (30-60 يوم)</option>
+  </select>
+</div>
+
+<div class="tabs">
+  <div class="tab on" data-f="all" onclick="setFilter('all')">الكل</div>
+  <div class="tab" data-f="call" onclick="setFilter('call')">🟢 CALL فقط</div>
+  <div class="tab" data-f="put" onclick="setFilter('put')">🔴 PUT فقط</div>
+</div>
+
+<!-- SCAN RESULTS -->
+<div class="card wide" style="margin-bottom:12px">
+  <h2>🔥 أفضل العقود — <span id="scanCount" class="mono" style="color:var(--mut)">اضغط «افحص»</span></h2>
+  <div id="scanProg" class="bar" style="display:none"><i id="scanBar" style="width:0%;background:var(--acc)"></i></div>
+  <div id="scanLoader" class="loader" style="display:none">جاري الفحص...</div>
+  <div style="overflow-x:auto">
+  <table id="scanTable" style="display:none"><thead><tr>
+    <th>#</th><th>الرمز</th><th>النوع</th><th>التقييم</th><th>سعر السهم</th>
+    <th>العقد</th><th>الانتهاء</th><th>السعر/العقد</th><th>التعادل</th>
+    <th>Delta</th><th>Theta/يوم</th><th>IV</th><th>OI</th>
+  </tr></thead><tbody id="scanBody"></tbody></table>
+  </div>
+  <div class="note">يفحص أسهماً نشطة، يحدد الاتجاه، ويختار لكل سهم أفضل عقد (CALL للصاعد / PUT للهابط) ضمن مدى الانتهاء المختار، ثم يرتّبهم بالتقييم. اضغط أي صف لتفاصيله.</div>
+</div>
+
+<!-- CONTRACT DETAIL -->
+<div class="card wide" id="detailCard" style="display:none;margin-bottom:12px">
+  <h2>📋 تفاصيل العقد — <span id="dTicker" class="mono">—</span></h2>
+  <div class="grid">
+    <div class="row"><span class="k">النوع</span><span class="v" id="dType">—</span></div>
+    <div class="row"><span class="k">سعر السهم الآن</span><span class="v mono" id="dSpot">—</span></div>
+    <div class="row"><span class="k">Strike</span><span class="v mono" id="dStrike">—</span></div>
+    <div class="row"><span class="k">الانتهاء</span><span class="v mono" id="dExp">—</span></div>
+    <div class="row"><span class="k">سعر العقد (Premium)</span><span class="v mono" id="dPrem">—</span></div>
+    <div class="row"><span class="k">تكلفة عقد واحد (×100)</span><span class="v mono" id="dCost">—</span></div>
+    <div class="row"><span class="k">نقطة التعادل</span><span class="v mono" id="dBE">—</span></div>
+    <div class="row"><span class="k">Delta (حساسية للسعر)</span><span class="v mono" id="dDelta">—</span></div>
+    <div class="row"><span class="k">Theta (خسارة يومية)</span><span class="v mono down" id="dTheta">—</span></div>
+    <div class="row"><span class="k">IV (التذبذب الضمني)</span><span class="v mono" id="dIV">—</span></div>
+    <div class="row"><span class="k">OI (الفائدة المفتوحة)</span><span class="v mono" id="dOI">—</span></div>
+  </div>
+  <div class="note" id="dNote"></div>
+</div>
+
+<div class="note" style="text-align:center;margin:18px 0 8px">
+  بيانات مجانية متأخرة ~15 دقيقة • اليونانيات تقديرية (Black-Scholes مبسّط) • تعليمي فقط
+</div>
+
+<script>
+let FILTER='all', RESULTS=[];
+const $=id=>document.getElementById(id);
+const fmt=(n,d=2)=>n==null||isNaN(n)?'—':Number(n).toFixed(d);
+const PROXIES=[u=>'https://corsproxy.io/?url='+encodeURIComponent(u),
+               u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u), u=>u];
+setInterval(()=>{$('clock').textContent=new Date().toLocaleTimeString('en-GB')},1000);
+
+// قائمة أسهم سائلة عليها أوبشن نشط
+const LIST=["AAPL","TSLA","NVDA","AMD","META","AMZN","MSFT","GOOGL","NFLX","INTC",
+  "SOFI","PLTR","F","NIO","AMC","RIOT","MARA","COIN","HOOD","SNAP",
+  "BAC","T","PFE","WBD","CCL","AAL","UBER","DIS","BABA","SQ",
+  "SPY","QQQ","IWM","XLF","SMH","GLD"];
+
+function setFilter(f){FILTER=f;document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.f===f));render();}
+
+// ===== fetch مع مهلة + بروكسي =====
+async function tfetch(url,ms=9000){
+  const ctl=new AbortController();const id=setTimeout(()=>ctl.abort(),ms);
+  try{return await fetch(url,{signal:ctl.signal});}finally{clearTimeout(id);}
+}
+async function getJSON(path){
+  for(const p of PROXIES){
+    try{const r=await tfetch(p('https://query1.finance.yahoo.com'+path));
+      if(!r.ok)continue;const j=await r.json();if(j)return j;}catch(e){}
+  }
+  return null;
+}
+
+// ===== المؤشرات =====
+const ema=(a,p)=>{const k=2/(p+1);let e=a[0];return a.map(v=>e=v*k+e*(1-k));};
+function rsiLast(c,p=14){let g=0,l=0;for(let i=1;i<=p;i++){const d=c[i]-c[i-1];d>=0?g+=d:l-=d;}
+  g/=p;l/=p;for(let i=p+1;i<c.length;i++){const d=c[i]-c[i-1];g=(g*(p-1)+(d>0?d:0))/p;l=(l*(p-1)+(d<0?-d:0))/p;}
+  return 100-100/(1+g/(l||1e-9));}
+function macdH(c){const e12=ema(c,12),e26=ema(c,26);const m=c.map((_,i)=>e12[i]-e26[i]);return m.at(-1)-ema(m,9).at(-1);}
+
+// ===== Black-Scholes (تقدير اليونانيات) =====
+function normCDF(x){const t=1/(1+0.2316419*Math.abs(x));const d=0.3989423*Math.exp(-x*x/2);
+  let p=d*t*(0.3193815+t*(-0.3565638+t*(1.781478+t*(-1.821256+t*1.330274))));return x>0?1-p:p;}
+function greeks(S,K,T,vol,isCall,r=0.04){
+  if(T<=0||vol<=0||!S||!K)return{delta:0,theta:0};
+  const d1=(Math.log(S/K)+(r+vol*vol/2)*T)/(vol*Math.sqrt(T)),d2=d1-vol*Math.sqrt(T);
+  const pdf=0.3989423*Math.exp(-d1*d1/2);
+  if(isCall)return{delta:normCDF(d1),
+    theta:(-S*pdf*vol/(2*Math.sqrt(T))-r*K*Math.exp(-r*T)*normCDF(d2))/365};
+  return{delta:normCDF(d1)-1,
+    theta:(-S*pdf*vol/(2*Math.sqrt(T))+r*K*Math.exp(-r*T)*normCDF(-d2))/365};
+}
+
+// ===== تحديد اتجاه السهم =====
+function direction(bars){
+  const c=bars.map(x=>x.c),price=c.at(-1);
+  const e20=ema(c,20).at(-1),e50=ema(c,50).at(-1),R=rsiLast(c),H=macdH(c);
+  const avgV=bars.slice(-21,-1).reduce((a,x)=>a+x.v,0)/20,volx=bars.at(-1).v/(avgV||1);
+  let score=0;
+  const bull=price>e20&&e20>e50;
+  const bear=price<e20&&e20<e50;
+  if(bull)score+=30;else if(price>e20)score+=15;
+  if(H>0)score+=20;
+  if(R>=52&&R<=68)score+=20;else if(R>45&&R<72)score+=10;
+  if(volx>1.3)score+=20;else if(volx>1)score+=10;
+  if(bull&&H>0)score+=10;
+  score=Math.min(100,score);
+  let dir=null;
+  if(bull&&H>0&&R<72&&score>=55)dir='call';
+  else if(bear&&H<0&&R>28&&score<=45)dir='put';
+  return{dir,score,price,iv:null,volx,rsi:R};
+}
+
+// ===== جلب أفضل عقد للسهم =====
+async function bestContract(sym,dir,spot,dteRange){
+  const base=await getJSON(`/v7/finance/options/${sym}`);
+  const res=base?.optionChain?.result?.[0];
+  if(!res||!res.expirationDates)return null;
+  const now=Date.now()/1000;
+  const [dmin,dmax]=dteRange.split('-').map(Number);
+  // اختر تاريخ انتهاء ضمن المدى
+  let expTs=null,dte=null;
+  for(const ts of res.expirationDates){
+    const d=(ts-now)/86400;
+    if(d>=dmin&&d<=dmax){expTs=ts;dte=Math.round(d);break;}
+  }
+  if(!expTs){for(const ts of res.expirationDates){const d=(ts-now)/86400;if(d>=dmin){expTs=ts;dte=Math.round(d);break;}}}
+  if(!expTs)return null;
+  // اجلب السلسلة لذلك التاريخ
+  let chain=res;
+  if(res.options?.[0]?.expirationDate!==expTs){
+    const j=await getJSON(`/v7/finance/options/${sym}?date=${expTs}`);
+    chain=j?.optionChain?.result?.[0]||res;
+  }
+  const table=dir==='call'?chain.options?.[0]?.calls:chain.options?.[0]?.puts;
+  if(!table||!table.length)return null;
+  // اختر strike قريب (~3% OTM)
+  const target=dir==='call'?spot*1.03:spot*0.97;
+  let best=null,bestDist=1e9;
+  for(const o of table){
+    const dist=Math.abs(o.strike-target);
+    if(dist<bestDist&&(o.lastPrice>0||o.bid>0)){bestDist=dist;best=o;}
+  }
+  if(!best)return null;
+  const prem=best.lastPrice||((best.bid+best.ask)/2)||0;
+  const iv=best.impliedVolatility||0;
+  const T=dte/365;
+  const g=greeks(spot,best.strike,T,iv,dir==='call');
+  const be=dir==='call'?best.strike+prem:best.strike-prem;
+  return{strike:best.strike,exp:new Date(expTs*1000).toISOString().slice(0,10),dte,
+    prem,iv:iv*100,oi:best.openInterest||0,vol:best.volume||0,
+    delta:g.delta,theta:g.theta,breakeven:be};
+}
+
+// ===== fetch شموع =====
+async function getBars(sym){
+  const j=await getJSON(`/v8/finance/chart/${sym}?interval=1d&range=6mo`);
+  const res=j?.chart?.result?.[0];if(!res)return null;
+  const t=res.timestamp,q=res.indicators.quote[0];const out=[];
+  for(let i=0;i<t.length;i++){if(q.close[i]==null)continue;
+    out.push({c:q.close[i],h:q.high[i],l:q.low[i],o:q.open[i],v:q.volume[i]||0});}
+  return out.length>55?out:null;
+}
+
+// ===== الماسح =====
+async function scan(){
+  $('scanBtn').disabled=true;$('scanBtn').textContent='جاري الفحص...';
+  $('scanProg').style.display='block';$('scanLoader').style.display='block';
+  $('scanTable').style.display='none';$('detailCard').style.display='none';
+  RESULTS=[];let done=0;
+  const dteRange=$('dteSel').value;
+  try{
+    // 1) حدد الاتجاه لكل سهم (متوازي)
+    const cand=[];
+    const B=8;
+    for(let i=0;i<LIST.length;i+=B){
+      await Promise.all(LIST.slice(i,i+B).map(async sym=>{
+        const bars=await getBars(sym);done++;
+        $('scanBar').style.width=(done/LIST.length*60)+'%';
+        $('scanLoader').textContent=`تحليل ${done}/${LIST.length}`;
+        if(!bars)return;
+        const d=direction(bars);
+        if(d.dir)cand.push({sym,...d});
+      }));
+    }
+    cand.sort((a,b)=>b.score-a.score);
+    // 2) اجلب أفضل عقد لأعلى 18 مرشّح
+    const top=cand.slice(0,18);
+    for(let i=0;i<top.length;i++){
+      const cc=top[i];
+      $('scanLoader').textContent=`جلب عقود ${cc.sym} (${i+1}/${top.length})`;
+      $('scanBar').style.width=(60+40*(i+1)/top.length)+'%';
+      const ct=await bestContract(cc.sym,cc.dir,cc.price,dteRange);
+      if(ct)RESULTS.push({...cc,contract:ct});
+    }
+    RESULTS.sort((a,b)=>b.score-a.score);
+    render();
+    if(!RESULTS.length)$('scanLoader').textContent='ما رجعت عقود. غالباً المتصفح حجب الطلب — افتح عبر GitHub Pages أو جرّب لاحقاً.';
+    else $('scanLoader').style.display='none';
+  }catch(e){$('scanLoader').textContent='خطأ: '+e.message;}
+  finally{$('scanBtn').disabled=false;$('scanBtn').textContent='🔍 افحص وأعطني أفضل عقود اليوم';$('scanProg').style.display='none';}
+}
+
+function render(){
+  let view=RESULTS.slice();
+  if(FILTER!=='all')view=view.filter(r=>r.dir===FILTER);
+  $('scanCount').textContent=`${view.length} عقد`;$('scanCount').style.color='var(--acc)';
+  if(!view.length){$('scanBody').innerHTML='<tr><td colspan="13" class="loader">لا عقود مطابقة.</td></tr>';
+    $('scanTable').style.display='table';return;}
+  const sc=s=>s>=70?'up':s>=50?'neu':'down';
+  $('scanBody').innerHTML=view.map((r,i)=>{const c=r.contract;
+    return `<tr style="cursor:pointer" onclick="showDetail(${RESULTS.indexOf(r)})">
+      <td class="mono">${i+1}</td><td class="mono" style="font-weight:700">${r.sym}</td>
+      <td><span class="tag ${r.dir}">${r.dir.toUpperCase()}</span></td>
+      <td class="mono ${sc(r.score)}" style="font-weight:700">${r.score}</td>
+      <td class="mono">$${fmt(r.price)}</td>
+      <td class="mono">${fmt(c.strike,0)}${r.dir==='call'?'C':'P'}</td>
+      <td class="mono">${c.dte}d</td>
+      <td class="mono">$${fmt(c.prem)}</td>
+      <td class="mono">$${fmt(c.breakeven)}</td>
+      <td class="mono">${fmt(c.delta,2)}</td>
+      <td class="mono down">$${fmt(c.theta,3)}</td>
+      <td class="mono">${fmt(c.iv,0)}%</td>
+      <td class="mono">${c.oi}</td></tr>`;}).join('');
+  $('scanTable').style.display='table';
+}
+
+function showDetail(idx){
+  const r=RESULTS[idx];if(!r)return;const c=r.contract;
+  $('detailCard').style.display='block';
+  $('dTicker').textContent=r.sym;
+  $('dType').innerHTML=`<span class="tag ${r.dir}">${r.dir.toUpperCase()}</span>`;
+  $('dSpot').textContent='$'+fmt(r.price);
+  $('dStrike').textContent=fmt(c.strike,1);
+  $('dExp').textContent=`${c.exp} (${c.dte} يوم)`;
+  $('dPrem').textContent='$'+fmt(c.prem);
+  $('dCost').textContent='$'+fmt(c.prem*100);
+  $('dBE').textContent='$'+fmt(c.breakeven);
+  $('dDelta').textContent=fmt(c.delta,3);
+  $('dTheta').textContent='$'+fmt(c.theta,3)+'/يوم';
+  $('dIV').textContent=fmt(c.iv,1)+'%';
+  $('dOI').textContent=c.oi+' (سيولة)';
+  const moveNeeded=Math.abs(c.breakeven-r.price)/r.price*100;
+  $('dNote').innerHTML=`لتربح، يحتاج السهم يتحرّك ${r.dir==='call'?'صعوداً':'هبوطاً'} ليتجاوز التعادل ($${fmt(c.breakeven)}) — أي حركة ~${fmt(moveNeeded,1)}% قبل الانتهاء. `+
+    `العقد يخسر ~$${fmt(Math.abs(c.theta*100),2)} يومياً بسبب الوقت. `+
+    `<b>تذكّر: حتى لو تحرّك السهم في اتجاهك، هبوط IV ممكن يقلّل ربحك.</b>`;
+  $('detailCard').scrollIntoView({behavior:'smooth',block:'center'});
+}
+</script>
+</body>
+</html>
