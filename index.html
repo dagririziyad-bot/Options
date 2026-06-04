@@ -82,7 +82,7 @@ tbody tr:hover{background:rgba(255,182,39,.06)}
 </div>
 
 <div class="warn">
-  ⚠️ <b>الأوبشن أخطر من الأسهم.</b> العقد يخسر قيمته يومياً بسبب الوقت (Theta)، وممكن يصعد السهم وأنت خسران بسبب هبوط التذبذب (IV). البيانات من Yahoo ومتأخرة ~15 دقيقة. تعليمي فقط — جرّب على Paper Trading.
+  ⚠️ <b>الأوبشن أخطر من الأسهم.</b> العقد يخسر قيمته يومياً بسبب الوقت (Theta)، وممكن يصعد السهم وأنت خسران بسبب هبوط التذبذب (IV). أسعار العقود هنا <b>تقديرية</b> (محسوبة من تذبذب السهم بصيغة Black-Scholes) — للإرشاد فقط، أكّد السعر الفعلي من منصة التداول. تعليمي — جرّب على Paper Trading.
 </div>
 
 <div class="controls">
@@ -208,44 +208,36 @@ function direction(bars){
 }
 
 // ===== جلب أفضل عقد للسهم =====
-async function bestContract(sym,dir,spot,dteRange){
-  const base=await getJSON(`/v7/finance/options/${sym}`);
-  const res=base?.optionChain?.result?.[0];
-  if(!res||!res.expirationDates)return null;
-  const now=Date.now()/1000;
+// ===== حساب عقد مقترح ذاتياً من بيانات السهم (يشتغل دائماً، بدون سلسلة عقود) =====
+function estimateContract(bars,dir,spot,dteRange){
+  // التذبذب المحقّق السنوي من العوائد اليومية (بديل عن IV)
+  const c=bars.map(x=>x.c), rets=[];
+  for(let i=1;i<c.length;i++)rets.push(Math.log(c[i]/c[i-1]));
+  const mean=rets.reduce((a,b)=>a+b,0)/rets.length;
+  const sd=Math.sqrt(rets.reduce((a,b)=>a+(b-mean)**2,0)/rets.length);
+  let vol=sd*Math.sqrt(252);                 // تذبذب سنوي
+  vol=Math.max(0.15,Math.min(2.5,vol));      // حدود منطقية 15%-250%
   const [dmin,dmax]=dteRange.split('-').map(Number);
-  // اختر تاريخ انتهاء ضمن المدى
-  let expTs=null,dte=null;
-  for(const ts of res.expirationDates){
-    const d=(ts-now)/86400;
-    if(d>=dmin&&d<=dmax){expTs=ts;dte=Math.round(d);break;}
-  }
-  if(!expTs){for(const ts of res.expirationDates){const d=(ts-now)/86400;if(d>=dmin){expTs=ts;dte=Math.round(d);break;}}}
-  if(!expTs)return null;
-  // اجلب السلسلة لذلك التاريخ
-  let chain=res;
-  if(res.options?.[0]?.expirationDate!==expTs){
-    const j=await getJSON(`/v7/finance/options/${sym}?date=${expTs}`);
-    chain=j?.optionChain?.result?.[0]||res;
-  }
-  const table=dir==='call'?chain.options?.[0]?.calls:chain.options?.[0]?.puts;
-  if(!table||!table.length)return null;
-  // اختر strike قريب (~3% OTM)
-  const target=dir==='call'?spot*1.03:spot*0.97;
-  let best=null,bestDist=1e9;
-  for(const o of table){
-    const dist=Math.abs(o.strike-target);
-    if(dist<bestDist&&(o.lastPrice>0||o.bid>0)){bestDist=dist;best=o;}
-  }
-  if(!best)return null;
-  const prem=best.lastPrice||((best.bid+best.ask)/2)||0;
-  const iv=best.impliedVolatility||0;
+  const dte=Math.round((dmin+dmax)/2)||21;   // منتصف المدى
   const T=dte/365;
-  const g=greeks(spot,best.strike,T,iv,dir==='call');
-  const be=dir==='call'?best.strike+prem:best.strike-prem;
-  return{strike:best.strike,exp:new Date(expTs*1000).toISOString().slice(0,10),dte,
-    prem,iv:iv*100,oi:best.openInterest||0,vol:best.volume||0,
-    delta:g.delta,theta:g.theta,breakeven:be};
+  // strike ~3% OTM (مدوّر لأقرب 0.5 أو 1)
+  const raw=dir==='call'?spot*1.03:spot*0.97;
+  const step=spot<25?0.5:spot<100?1:5;
+  const strike=Math.round(raw/step)*step;
+  // سعر العقد التقديري + اليونانيات (Black-Scholes)
+  const pr=bsPrice(spot,strike,T,vol,dir==='call');
+  const g=greeks(spot,strike,T,vol,dir==='call');
+  const be=dir==='call'?strike+pr:strike-pr;
+  // تاريخ انتهاء تقريبي
+  const expD=new Date(Date.now()+dte*86400e3).toISOString().slice(0,10);
+  return{strike,exp:expD,dte,prem:pr,iv:vol*100,oi:'—',vol:'—',
+    delta:g.delta,theta:g.theta,breakeven:be,estimated:true};
+}
+function bsPrice(S,K,T,vol,isCall,r=0.04){
+  if(T<=0||vol<=0)return Math.max(0,isCall?S-K:K-S);
+  const d1=(Math.log(S/K)+(r+vol*vol/2)*T)/(vol*Math.sqrt(T)),d2=d1-vol*Math.sqrt(T);
+  if(isCall)return S*normCDF(d1)-K*Math.exp(-r*T)*normCDF(d2);
+  return K*Math.exp(-r*T)*normCDF(-d2)-S*normCDF(-d1);
 }
 
 // ===== fetch شموع =====
@@ -266,32 +258,23 @@ async function scan(){
   RESULTS=[];let done=0;
   const dteRange=$('dteSel').value;
   try{
-    // 1) حدد الاتجاه لكل سهم (متوازي)
-    const cand=[];
     const B=8;
     for(let i=0;i<LIST.length;i+=B){
       await Promise.all(LIST.slice(i,i+B).map(async sym=>{
         const bars=await getBars(sym);done++;
-        $('scanBar').style.width=(done/LIST.length*60)+'%';
+        $('scanBar').style.width=(done/LIST.length*100)+'%';
         $('scanLoader').textContent=`تحليل ${done}/${LIST.length}`;
         if(!bars)return;
         const d=direction(bars);
-        if(d.dir)cand.push({sym,...d});
+        if(d.dir){
+          const ct=estimateContract(bars,d.dir,d.price,dteRange);
+          RESULTS.push({sym,...d,contract:ct});
+        }
       }));
-    }
-    cand.sort((a,b)=>b.score-a.score);
-    // 2) اجلب أفضل عقد لأعلى 18 مرشّح
-    const top=cand.slice(0,18);
-    for(let i=0;i<top.length;i++){
-      const cc=top[i];
-      $('scanLoader').textContent=`جلب عقود ${cc.sym} (${i+1}/${top.length})`;
-      $('scanBar').style.width=(60+40*(i+1)/top.length)+'%';
-      const ct=await bestContract(cc.sym,cc.dir,cc.price,dteRange);
-      if(ct)RESULTS.push({...cc,contract:ct});
     }
     RESULTS.sort((a,b)=>b.score-a.score);
     render();
-    if(!RESULTS.length)$('scanLoader').textContent='ما رجعت عقود. غالباً المتصفح حجب الطلب — افتح عبر GitHub Pages أو جرّب لاحقاً.';
+    if(!RESULTS.length)$('scanLoader').textContent='ما طلعت فرص واضحة الآن (السوق متذبذب أو مقفول). جرّب وقت فتح السوق.';
     else $('scanLoader').style.display='none';
   }catch(e){$('scanLoader').textContent='خطأ: '+e.message;}
   finally{$('scanBtn').disabled=false;$('scanBtn').textContent='🔍 افحص وأعطني أفضل عقود اليوم';$('scanProg').style.display='none';}
@@ -335,7 +318,7 @@ function showDetail(idx){
   $('dDelta').textContent=fmt(c.delta,3);
   $('dTheta').textContent='$'+fmt(c.theta,3)+'/يوم';
   $('dIV').textContent=fmt(c.iv,1)+'%';
-  $('dOI').textContent=c.oi+' (سيولة)';
+  $('dOI').textContent='غير متاح مجاناً';
   const moveNeeded=Math.abs(c.breakeven-r.price)/r.price*100;
   $('dNote').innerHTML=`لتربح، يحتاج السهم يتحرّك ${r.dir==='call'?'صعوداً':'هبوطاً'} ليتجاوز التعادل ($${fmt(c.breakeven)}) — أي حركة ~${fmt(moveNeeded,1)}% قبل الانتهاء. `+
     `العقد يخسر ~$${fmt(Math.abs(c.theta*100),2)} يومياً بسبب الوقت. `+
