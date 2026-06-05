@@ -388,7 +388,7 @@ const PROVIDERS = {
     proxies(){
       const list=[];
       const p=(S.proxy||'').trim(); if(p) list.push(p);
-      list.push('https://api.allorigins.win/raw?url=','https://corsproxy.io/?url=');
+      list.push('https://api.codetabs.com/v1/proxy/?quest=','https://corsproxy.io/?url=','https://api.allorigins.win/raw?url=');
       return list;
     },
     occ(sym){ const m=String(sym).match(/(\d{6})([CP])(\d{8})$/); if(!m) return null;
@@ -592,14 +592,19 @@ $('loadChain').onclick=async()=>{
 
 function handleNetErr(e){
   console.error(e);
-  let msg='<b>Request failed:</b> '+(e.message||e);
-  if(String(e).includes('Failed to fetch')||e.name==='TypeError'){
+  const m=String(e.message||e);
+  let msg='<b>Request failed:</b> '+m;
+  if(m.includes('413')||m.includes('429')||m.includes('414')){
+    msg+='<br>The chain is <b>too large</b> for the free public proxies (NVDA, SPY, etc. are big). '
+      +'Fix it once with your own free <b>Cloudflare Worker</b> proxy (no size limit): deploy the worker, then paste '
+      +'<code>https://YOUR-WORKER.workers.dev/?url=</code> in the <b>CORS proxy</b> field and Save. '
+      +'(Steps are in the chat / README.) Smaller-cap tickers may work without it.';
+  }else if(m.includes('Failed to fetch')||e.name==='TypeError'){
     if(S.provider==='cboe'){
-      msg+='<br>The direct call and the public proxies were all blocked. Paste a CORS proxy URL in the Connection panel '
-        +'(e.g. <code>https://api.allorigins.win/raw?url=</code> or your own Cloudflare Worker) and Save, then retry.';
+      msg+='<br>The direct call and the public proxies were all blocked. Paste a CORS proxy URL '
+        +'(ideally your own Cloudflare Worker) in the Connection panel and Save, then retry.';
     }else{
-      msg+='<br>This is usually a <b>CORS</b> or network block. Tradier supports direct browser calls; '
-        +'Polygon/Finnhub may need a paid/CORS-friendly plan. Also confirm the key and that you clicked <b>Save</b>. '
+      msg+='<br>This is usually a <b>CORS</b> or network block. Confirm the key and that you clicked <b>Save</b>. '
         +'Tip: the <b>CBOE (free · no key)</b> provider needs no account.';
     }
   }
