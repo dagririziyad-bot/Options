@@ -154,33 +154,38 @@
   <div class="panel">
     <p class="panel-h">Connection</p>
     <div class="row">
-      <div class="field" style="flex:0 0 160px">
+      <div class="field" style="flex:0 0 175px">
         <label>Data provider</label>
         <select id="provider">
-          <option value="tradier">Tradier (browser-ready)</option>
+          <option value="cboe">CBOE (free · no key)</option>
+          <option value="tradier">Tradier</option>
           <option value="polygon">Polygon.io</option>
           <option value="finnhub">Finnhub</option>
         </select>
       </div>
-      <div class="field" style="flex:0 0 150px" id="envWrap">
+      <div class="field" style="flex:0 0 150px;display:none" id="envWrap">
         <label>Environment</label>
         <select id="env">
           <option value="prod">Production</option>
           <option value="sandbox">Sandbox (paper)</option>
         </select>
       </div>
-      <div class="field" style="flex:2;min-width:220px">
+      <div class="field" style="flex:2;min-width:220px;display:none" id="keyWrap">
         <label>API key / token <span class="amb">(kept in your browser only)</span></label>
         <input id="apikey" type="password" placeholder="paste your API key here" autocomplete="off" />
       </div>
-      <div class="field" style="flex:0 0 130px">
+      <div class="field" style="flex:2;min-width:200px" id="proxyWrap">
+        <label>CORS proxy <span class="amb">(optional — auto if blank)</span></label>
+        <input id="proxy" placeholder="https://api.allorigins.win/raw?url=" autocomplete="off" />
+      </div>
+      <div class="field" style="flex:0 0 110px">
         <label>Risk-free rate %</label>
         <input id="rate" type="number" step="0.1" value="4.3" />
       </div>
       <button class="primary" id="saveCfg">Save</button>
     </div>
-    <p class="hint" style="margin:12px 0 0">
-      🔒 Your key is stored locally in this browser (never uploaded, never committed to the repo). For a public repo, keep your key restricted on the provider side.
+    <p class="hint" id="cfgHint" style="margin:12px 0 0">
+      🆓 CBOE needs no account or key — it serves the full delayed chain (with Greeks) for free. If a direct call is blocked, the app auto-routes through a public CORS proxy.
     </p>
   </div>
 
@@ -302,7 +307,7 @@
    STATE
 ============================================================ */
 const S = {
-  provider:'tradier', env:'prod', key:'', rate:0.043,
+  provider:'cboe', env:'prod', key:'', proxy:'', rate:0.043,
   ticker:'', spot:null, expiration:'', dte:null,
   chain:[], side:'call'
 };
@@ -311,11 +316,12 @@ const fmt = (n,d=2) => (n==null||isNaN(n)) ? '—' : Number(n).toLocaleString('e
 const pct = (n,d=2) => (n==null||isNaN(n)) ? '—' : (n*100).toFixed(d)+'%';
 
 /* ---- persistence (graceful if storage blocked) ---- */
-function saveLocal(){ try{ localStorage.setItem('od_cfg', JSON.stringify({provider:S.provider,env:S.env,key:S.key,rate:S.rate})); }catch(e){} }
+function saveLocal(){ try{ localStorage.setItem('od_cfg', JSON.stringify({provider:S.provider,env:S.env,key:S.key,proxy:S.proxy,rate:S.rate})); }catch(e){} }
 function loadLocal(){ try{ const c=JSON.parse(localStorage.getItem('od_cfg')||'{}');
   if(c.provider){S.provider=c.provider;$('provider').value=c.provider;}
   if(c.env){S.env=c.env;$('env').value=c.env;}
   if(c.key){S.key=c.key;$('apikey').value=c.key;}
+  if(c.proxy){S.proxy=c.proxy;$('proxy').value=c.proxy;}
   if(c.rate){S.rate=c.rate;$('rate').value=(c.rate*100).toFixed(1);}
 }catch(e){} }
 
@@ -376,6 +382,52 @@ function clearErr(){ $('errBox').style.display='none'; }
    row = {type,strike,bid,ask,mid,last,volume,oi,iv,delta,gamma,theta,vega}
 ============================================================ */
 const PROVIDERS = {
+  /* ---------- CBOE (free, no key) ---------- */
+  cboe:{
+    cache:null, cacheSym:null,
+    proxies(){
+      const list=[];
+      const p=(S.proxy||'').trim(); if(p) list.push(p);
+      list.push('https://api.allorigins.win/raw?url=','https://corsproxy.io/?url=');
+      return list;
+    },
+    occ(sym){ const m=String(sym).match(/(\d{6})([CP])(\d{8})$/); if(!m) return null;
+      return {expiry:`20${m[1].slice(0,2)}-${m[1].slice(2,4)}-${m[1].slice(4,6)}`,
+              type:m[2]==='C'?'call':'put', strike:parseInt(m[3],10)/1000}; },
+    async _fetch(sym){
+      if(this.cache&&this.cacheSym===sym) return this.cache;
+      const direct=`https://cdn.cboe.com/api/global/delayed_quotes/options/${sym}.json`;
+      const urls=[direct, ...this.proxies().map(px=>px.includes('=')?px+encodeURIComponent(direct):px+direct)];
+      let lastErr;
+      for(const u of urls){
+        try{
+          const r=await fetch(u);
+          if(!r.ok){ lastErr=new Error('CBOE '+r.status+(r.status===404?' — ticker not found on CBOE':'')); continue; }
+          const j=await r.json(); this.cache=j; this.cacheSym=sym; return j;
+        }catch(e){ lastErr=e; }
+      }
+      throw lastErr||new Error('CBOE fetch failed');
+    },
+    data(j){ const d=j.data||j; return {price:d.current_price, options:d.options||[]}; },
+    async expirations(sym){
+      const {options}=this.data(await this._fetch(sym)); const set=new Set();
+      options.forEach(o=>{ const p=this.occ(o.option); if(p) set.add(p.expiry); });
+      return [...set].sort();
+    },
+    async spot(sym){ return this.data(await this._fetch(sym)).price; },
+    async chain(sym,exp){
+      const {options}=this.data(await this._fetch(sym)); const rows=[];
+      options.forEach(o=>{ const p=this.occ(o.option); if(!p||p.expiry!==exp) return;
+        rows.push({ type:p.type, strike:p.strike,
+          bid:+o.bid||0, ask:+o.ask||0, last:+o.last_trade_price||0,
+          volume:+o.volume||0, oi:+o.open_interest||0,
+          iv:(o.iv!=null&&o.iv!=='')?+o.iv:null,
+          delta:o.delta!=null?+o.delta:null, gamma:o.gamma!=null?+o.gamma:null,
+          theta:o.theta!=null?+o.theta:null, vega:o.vega!=null?+o.vega:null });
+      });
+      return rows;
+    }
+  },
   /* ---------- TRADIER ---------- */
   tradier:{
     base(){ return S.env==='sandbox' ? 'https://sandbox.tradier.com' : 'https://api.tradier.com'; },
@@ -493,15 +545,25 @@ function enrich(chain){
 ============================================================ */
 $('saveCfg').onclick=()=>{
   S.provider=$('provider').value; S.env=$('env').value;
-  S.key=$('apikey').value.trim(); S.rate=(+$('rate').value||4.3)/100;
-  if(!S.key){ showErr('Please paste an API key first.'); return; }
+  S.key=$('apikey').value.trim(); S.proxy=$('proxy').value.trim();
+  S.rate=(+$('rate').value||4.3)/100;
+  if(S.provider!=='cboe' && !S.key){ showErr('Please paste an API key first.'); return; }
   clearErr(); saveLocal(); setStatus('Configured — '+S.provider,'ok');
 };
-$('provider').onchange=()=>{ $('envWrap').style.display = $('provider').value==='tradier'?'block':'none'; };
+function toggleProviderFields(){
+  const p=$('provider').value;
+  $('envWrap').style.display = p==='tradier'?'block':'none';
+  $('keyWrap').style.display = p==='cboe'?'none':'block';
+  $('proxyWrap').style.display = p==='cboe'?'block':'none';
+  $('cfgHint').innerHTML = p==='cboe'
+    ? '🆓 CBOE needs no account or key — it serves the full delayed chain (with Greeks) for free. If a direct call is blocked, the app auto-routes through a public CORS proxy.'
+    : '🔒 Your key is stored locally in this browser (never uploaded, never committed to the repo). For a public repo, keep your key restricted on the provider side.';
+}
+$('provider').onchange=toggleProviderFields;
 
 $('loadExp').onclick=async()=>{
   const sym=$('ticker').value.trim().toUpperCase(); if(!sym){showErr('Enter a ticker.');return;}
-  if(!S.key){showErr('Save your API key first.');return;}
+  if(S.provider!=='cboe' && !S.key){showErr('Save your API key first.');return;}
   S.ticker=sym; clearErr(); setStatus('Loading expirations…','busy');
   try{
     const exps=await PROVIDERS[S.provider].expirations(sym);
@@ -532,8 +594,14 @@ function handleNetErr(e){
   console.error(e);
   let msg='<b>Request failed:</b> '+(e.message||e);
   if(String(e).includes('Failed to fetch')||e.name==='TypeError'){
-    msg+='<br>This is usually a <b>CORS</b> or network block. Tradier supports direct browser calls; '
-      +'Polygon/Finnhub may need a CORS-friendly plan or a small proxy. Also double-check the key and that you clicked <b>Save</b>.';
+    if(S.provider==='cboe'){
+      msg+='<br>The direct call and the public proxies were all blocked. Paste a CORS proxy URL in the Connection panel '
+        +'(e.g. <code>https://api.allorigins.win/raw?url=</code> or your own Cloudflare Worker) and Save, then retry.';
+    }else{
+      msg+='<br>This is usually a <b>CORS</b> or network block. Tradier supports direct browser calls; '
+        +'Polygon/Finnhub may need a paid/CORS-friendly plan. Also confirm the key and that you clicked <b>Save</b>. '
+        +'Tip: the <b>CBOE (free · no key)</b> provider needs no account.';
+    }
   }
   showErr(msg); setStatus('Error','err');
 }
@@ -767,8 +835,8 @@ $('tabs').querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
 
 /* init */
 loadLocal();
-$('provider').dispatchEvent(new Event('change'));
-if(S.key) setStatus('Configured — '+S.provider,'ok');
+toggleProviderFields();
+if(S.provider==='cboe' || S.key) setStatus('Ready — '+S.provider,'ok');
 </script>
 </body>
 </html>
