@@ -83,7 +83,7 @@ body{background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSyst
 .prog-top{font-size:12px;color:var(--tx2);margin-bottom:8px;display:flex;justify-content:space-between;}
 .prog-track{background:var(--bg);border-radius:3px;height:4px;overflow:hidden;margin-bottom:9px;}
 .prog-bar{height:100%;background:var(--ac);border-radius:3px;transition:width 0.3s;}
-.prog-tks{display:flex;flex-wrap:wrap;gap:4px;}
+.prog-tks{display:flex;flex-wrap:wrap;gap:4px;max-height:90px;overflow-y:auto;}
 .ptk{font-size:10px;font-family:var(--mono);padding:2px 7px;border-radius:3px;}
 .ptk-w{background:var(--sf2);color:var(--tx3);}
 .ptk-a{background:var(--amd);color:var(--am);}
@@ -216,11 +216,30 @@ td{padding:9px 11px;vertical-align:middle;white-space:nowrap;}
   <div>
     <label class="lbl">Quick Lists</label>
     <div class="pills">
-      <button class="pill on" onclick="loadL('popular',this)">Popular</button>
-      <button class="pill" onclick="loadL('meme',this)">Meme</button>
-      <button class="pill" onclick="loadL('etf',this)">ETFs</button>
-      <button class="pill" onclick="loadL('hot',this)">Hot</button>
+      <button class="pill on" onclick="loadL('popular',this)">Popular (100)</button>
+      <button class="pill" onclick="loadL('meme',this)">Meme (74)</button>
+      <button class="pill" onclick="loadL('etf',this)">ETFs (98)</button>
+      <button class="pill" onclick="loadL('hot',this)">Hot (81)</button>
+      <button class="pill" onclick="loadL('penny',this)">Penny (97)</button>
+      <button class="pill" onclick="loadL('sp500_sample',this)">S&P 500 (104)</button>
     </div>
+    <div id="largeListWarn" style="display:none;font-size:10px;color:var(--am);margin-top:7px;display:flex;gap:5px;align-items:flex-start">
+      <i class="ti ti-clock" style="margin-top:1px"></i>
+      <span>Large list — scan will take a few minutes (real Yahoo data, ~0.4s/ticker + retries).</span>
+    </div>
+  </div>
+
+  <div>
+    <label class="lbl">Or paste your own (comma-separated)</label>
+    <div class="ti-row">
+      <input type="text" id="bulkInput" placeholder="AAPL, MSFT, NVDA, ..." style="text-transform:uppercase">
+      <button class="add-btn" onclick="addBulk()"><i class="ti ti-list-check"></i></button>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:6px">
+    <button class="export-btn" style="flex:1" onclick="watchlist=[];renderTags();">Clear All</button>
+    <span style="font-size:11px;color:var(--tx3);align-self:center" id="wlCount">0 tickers</span>
   </div>
 
   <div>
@@ -406,11 +425,16 @@ setInterval(()=>{
 
 /* ── LISTS ── */
 const LISTS={
-  popular:['AAPL','TSLA','NVDA','SPY','QQQ','AMZN','MSFT','META','AMD','SOFI'],
-  meme:   ['GME','AMC','PLTR','HOOD','RIVN','SNDL','BB','SPCE','BBBY','CLOV'],
-  etf:    ['SPY','QQQ','IWM','GLD','SLV','TLT','XLF','ARKK','SQQQ','TQQQ'],
-  hot:    ['NVDA','TSLA','COIN','MSTR','RBLX','SNAP','DKNG','UBER','LYFT','AMD'],
+  popular:['AAPL','TSLA','NVDA','SPY','QQQ','AMZN','MSFT','META','AMD','SOFI','GOOGL','GOOG','NFLX','DIS','BA','JPM','BAC','WMT','KO','PEP','XOM','CVX','PFE','JNJ','UNH','V','MA','HD','NKE','MCD','COST','ORCL','CRM','ADBE','INTC','CSCO','IBM','QCOM','TXN','AVGO','PYPL','SBUX','GE','F','GM','T','VZ','CMCSA','ABT','TMO','ABBV','MRK','LLY','WFC','GS','MS','C','SCHW','SPGI','BLK','AXP','UPS','CAT','DE','HON','MMM','LMT','RTX','LOW','TGT','CVS','UNP','NEE','LIN','PG','CL','KMB','GIS','MO','PM','DUK','SO','D','AEP','EXC','XEL','ED','WEC','ES','AEE','CMS','DTE','ETR','FE','NI','PNW','PPL','SRE','WTRG','AWK'],
+  meme:['GME','AMC','PLTR','HOOD','RIVN','SNDL','BB','SPCE','BBBY','CLOV','WISH','NOK','EXPR','NAKD','KOSS','MVIS','TLRY','CGC','ACB','HEXO','OGI','SNAP','LCID','NIO','XPEV','LI','FUBO','SKLZ','CLNE','RIDE','WKHS','NKLA','GOEV','PSNY','BLNK','CHPT','PLUG','FCEL','BLDP','RUN','SPWR','SOLO','MULN','PHUN','BBIG','ATER','PROG','GREE','CEI','SDC','OPEN','UPST','AFRM','SOFI','DKNG','PENN','RKT','CCIV','QS','ROOT','LMND','VRM','CVNA','CARG','BARK','PRTY','GNUS','TRCH','XELA','MARK','IRNT','NILE','SAVA','GSAT'],
+  etf:['SPY','QQQ','IWM','GLD','SLV','TLT','XLF','ARKK','SQQQ','TQQQ','DIA','VOO','VTI','EFA','EEM','XLE','XLK','XLV','XLI','XLY','XLP','XLU','XLB','XLRE','XLC','VXX','UVXY','SVXY','SOXL','SOXS','TNA','TZA','SPXL','SPXS','UPRO','SPXU','FAS','FAZ','TECL','TECS','LABU','LABD','NUGT','DUST','JNUG','JDST','GUSH','DRIP','CURE','RXL','UCO','SCO','BOIL','KOLD','VIXY','SVIX','TMF','TMV','UDOW','SDOW','UYG','SKF','URTY','SRTY','EDC','EDZ','YINN','YANG','GDXJ','GDX','SILJ','XOP','OIH','XHB','ITB','SMH','SOXX','XBI','IBB','KRE','KBE','XRT','XME','IYR','VNQ','REM','MORT','HYG','JNK','LQD','AGG','BND','SHY','IEF','TIP','MUB','EMB','PFF'],
+  hot:['NVDA','TSLA','COIN','MSTR','RBLX','SNAP','DKNG','UBER','LYFT','AMD','PLTR','SOFI','HOOD','RIVN','LCID','NIO','MARA','RIOT','CLSK','HUT','BITF','CIFR','WULF','BTBT','SQ','PYPL','SHOP','ROKU','PINS','TWLO','ZM','DOCU','CRWD','NET','DDOG','SNOW','MDB','OKTA','PANW','ZS','FTNT','S','SMCI','ARM','AVGO','MU','AMAT','LRCX','KLAC','ASML','TSM','INTC','QCOM','TXN','ADI','MRVL','ON','SWKS','QRVO','MCHP','WOLF','ENVX','QS','CHPT','BLNK','PLUG','FCEL','RUN','ENPH','SEDG','FSLR','NEE','BE','STEM','ARRY','SHLS','NXT','CSIQ','JKS','DQ','SOL'],
+  penny:['SNDL','BB','SPCE','CLOV','WISH','NOK','KOSS','MVIS','TLRY','CGC','ACB','HEXO','OGI','FUBO','SKLZ','CLNE','RIDE','WKHS','NKLA','GOEV','PSNY','BLNK','PLUG','FCEL','BLDP','SOLO','MULN','PHUN','BBIG','ATER','PROG','GREE','CEI','SDC','GSAT','XELA','MARK','TRCH','NILE','SAVA','IRNT','BARK','PRTY','GNUS','VTGN','CYTK','OCGN','INO','VXRT','NVAX','BNGO','PACB','CRSP','EDIT','NTLA','BEAM','VERV','SGMO','RXRX','RCKT','RARE','FOLD','PGEN','BLUE','SRPT','ALNY','IONS','EXEL','HALO','MGNX','ARWR','XLRN','APLS','MRTX','RGNX','VCYT','NVTA','TXG','CDNA','FATE','ALLO','ADPT','TWST','CDXS','VIR','SENS','DRIO','TLGY','GBOX','PHIO','SLNO','ATNM','BCDA','TENX','HEPA','GMDA','SLDB'],
+  sp500_sample:['AAPL','MSFT','GOOGL','AMZN','NVDA','META','TSLA','BRK.B','LLY','V','JPM','UNH','XOM','MA','JNJ','PG','HD','MRK','COST','ABBV','CVX','PEP','KO','AVGO','BAC','PFE','TMO','MCD','CSCO','CRM','ABT','ACN','NFLX','LIN','DHR','VZ','ADBE','CMCSA','NKE','WMT','TXN','PM','INTC','UPS','RTX','NEE','HON','QCOM','LOW','UNP','IBM','MS','GS','SPGI','CAT','AMGN','ELV','DE','BLK','AXP','SBUX','BKNG','GE','MDLZ','ADI','LMT','SYK','AMT','PLD','MMC','GILD','TJX','ADP','VRTX','MO','REGN','C','CB','SCHW','ZTS','SO','CI','PGR','BSX','ETN','BDX','CME','DUK','AON','EOG','NOC','APD','ITW','SLB','HUM','EQIX','CSX','FISV','MU','WM','ICE','PNC','USB','EMR'],
 };
+
+/* Lists with >25 tickers trigger a "large scan" time warning */
+const LARGE_LIST_THRESHOLD = 25;
 let watchlist=[...LISTS.popular];
 let selTypes=new Set(['call','put']);
 let maxDTE=60;
@@ -422,27 +446,42 @@ function renderTags(){
   document.getElementById('tags').innerHTML=watchlist.map(t=>
     `<div class="tag" onclick="rmT('${t}')">${t}<i class="ti ti-x" style="font-size:8px;margin-left:3px"></i></div>`
   ).join('');
+  document.getElementById('wlCount').textContent=watchlist.length+' ticker'+(watchlist.length===1?'':'s');
 }
 function addT(){
   const inp=document.getElementById('ti');
-  const t=inp.value.trim().toUpperCase().replace(/[^A-Z]/g,'');
+  const t=inp.value.trim().toUpperCase().replace(/[^A-Z.]/g,'');
   if(t&&!watchlist.includes(t)){watchlist.push(t);renderTags();}
   inp.value='';
 }
+function addBulk(){
+  const inp=document.getElementById('bulkInput');
+  const raw=inp.value.trim();
+  if(!raw)return;
+  const tickers=raw.split(/[,\s]+/).map(t=>t.toUpperCase().replace(/[^A-Z.]/g,'')).filter(Boolean);
+  let added=0;
+  for(const t of tickers){
+    if(!watchlist.includes(t)){watchlist.push(t);added++;}
+  }
+  renderTags();
+  inp.value='';
+  if(added>LARGE_LIST_THRESHOLD)showLargeListWarn(true);
+}
+document.getElementById('bulkInput').addEventListener('keydown',e=>{if(e.key==='Enter')addBulk();});
 function rmT(t){watchlist=watchlist.filter(x=>x!==t);renderTags();}
 document.getElementById('ti').addEventListener('keydown',e=>{if(e.key==='Enter')addT();});
 
+function showLargeListWarn(show){
+  document.getElementById('largeListWarn').style.display=show?'flex':'none';
+}
+
 function loadL(n,btn){
-  document.querySelectorAll('.sb .pill').forEach(p=>{
-    if(['popular','meme','etf','hot','14d','30d','60d','90d','180d','call','put'].every(k=>!p.textContent.trim().toLowerCase().startsWith(k.replace('d',''))))
-      return;
-    if(['popular','meme','etfs','hot'].some(k=>p.textContent.toLowerCase()===k))p.classList.remove('on');
-  });
-  document.querySelectorAll('.sb .pill').forEach(p=>{
-    if(['popular','meme','etfs','hot'].some(k=>p.textContent.toLowerCase()===k))p.classList.remove('on');
+  document.querySelectorAll('.sb .pills .pill').forEach(p=>{
+    if(p.hasAttribute('onclick')&&p.getAttribute('onclick').includes('loadL'))p.classList.remove('on');
   });
   btn.classList.add('on');
   watchlist=[...LISTS[n]]; renderTags();
+  showLargeListWarn(watchlist.length>LARGE_LIST_THRESHOLD);
 }
 function togType(t,el){
   if(selTypes.has(t)){selTypes.delete(t);el.classList.remove('on');}
@@ -624,6 +663,7 @@ async function runScan(){
 
   allResults=[];errors=[];
   let done=0,ok=0,failed=0;
+  const scanStart=Date.now();
 
   document.getElementById('pTks').innerHTML=watchlist.map(t=>
     `<span class="ptk ptk-w" id="pt_${t}">${t}</span>`
@@ -632,8 +672,15 @@ async function runScan(){
   for(const ticker of watchlist){
     const el=document.getElementById('pt_'+ticker);
     if(el)el.className='ptk ptk-a';
-    document.getElementById('pLbl').textContent=`Fetching ${ticker}… (${done+1}/${watchlist.length})`;
     const pct=Math.round(done/watchlist.length*100);
+    let eta='';
+    if(done>2){
+      const elapsed=(Date.now()-scanStart)/1000;
+      const perTicker=elapsed/done;
+      const remain=Math.round(perTicker*(watchlist.length-done));
+      eta=remain>60?` · ~${Math.ceil(remain/60)}m left`:` · ~${remain}s left`;
+    }
+    document.getElementById('pLbl').textContent=`Fetching ${ticker}… (${done+1}/${watchlist.length})${eta}`;
     document.getElementById('pPct').textContent=pct+'%';
     document.getElementById('pBar').style.width=pct+'%';
 
@@ -649,7 +696,7 @@ async function runScan(){
       failed++;
     }
     done++;
-    await new Promise(r=>setTimeout(r,400));
+    await new Promise(r=>setTimeout(r,250));
   }
 
   document.getElementById('pPct').textContent='100%';
