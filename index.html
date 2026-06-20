@@ -406,7 +406,7 @@ td{padding:9px 11px;vertical-align:middle;white-space:nowrap;}
     <div class="sigs" id="dSg"></div>
   </div>
   <div>
-    <div class="dsec">AI Analysis</div>
+    <div class="dsec">Trade Notes (rule-based, instant)</div>
     <div class="aibox ld" id="dAI">Select a contract…</div>
   </div>
   <button class="tbtn call" id="dTB"><i class="ti ti-external-link"></i> View on Webull / ToS</button>
@@ -849,9 +849,7 @@ function showD(r){
     ?r.reasons.map(s=>`<div class="sig ${s.cls}"><i class="ti ${s.icon}" aria-hidden="true"></i>${s.t}</div>`).join('')
     :'<div style="color:var(--tx3);font-size:11px">No signals.</div>';
 
-  const ai=document.getElementById('dAI');
-  ai.textContent='Analyzing…'; ai.className='aibox ld';
-  fetchAI(r).then(t=>{ai.textContent=t;ai.className='aibox';});
+  showAnalysis(r);
 
   const tb=document.getElementById('dTB');
   tb.className='tbtn '+r.type;
@@ -876,20 +874,87 @@ function exportCSV(){
   a.click();
 }
 
-/* ── AI ANALYSIS ── */
-async function fetchAI(r){
-  const p=`You are a professional options trader. Give a concise 3–4 sentence analysis of this REAL options contract (live Yahoo Finance data). Cover: risk/reward, IV assessment, theta decay, and one actionable insight.
+/* ── LOCAL ANALYSIS ENGINE (no API, instant, rule-based) ── */
+function localAnalysis(r){
+  const parts=[];
+  const ivp=r.iv*100;
+  const ad=Math.abs(r.delta);
+  const cost=(r.ask*100).toFixed(0);
+  const spread=r.ask-r.bid;
+  const spreadPct=r.ask>0?(spread/r.ask*100):0;
+  const breakeven=r.type==='call'?(r.strike+r.ask):(r.strike-r.ask);
+  const moveNeeded=r.stockPx?((breakeven-r.stockPx)/r.stockPx*100):0;
 
-${r.ticker} ${r.type.toUpperCase()} $${r.strike} strike · Ask $${r.ask} · Bid $${r.bid} · DTE ${r.dte} · IV ${(r.iv*100).toFixed(1)}% · Delta ${r.delta} · Theta ${r.theta}/day · Vol ${r.volume.toLocaleString()} · OI ${r.oi.toLocaleString()} · Stock $${r.stockPx} · Score ${r.score}/100`;
-  try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,messages:[{role:'user',content:p}]})
-    });
-    const d=await res.json();
-    return d.content?.[0]?.text||'Analysis unavailable.';
-  }catch{return 'Could not load AI analysis.';}
+  // 1) Risk/Reward opener
+  if(r.score>=70){
+    parts.push(`This is a strong setup overall (score ${r.score}/100) — the combination of liquidity, delta positioning, and time window line up favorably.`);
+  }else if(r.score>=45){
+    parts.push(`This is a moderate setup (score ${r.score}/100) — workable, but a few factors keep it from being a top pick.`);
+  }else{
+    parts.push(`This is a speculative, lower-quality setup (score ${r.score}/100) — treat it as a small, defined-risk bet rather than a core position.`);
+  }
+
+  // 2) Cost & breakeven framing
+  const dirWord=r.type==='call'?'rise above':'fall below';
+  parts.push(`At $${r.ask.toFixed(2)} ask ($${cost} per contract), ${r.ticker} needs to ${dirWord} $${breakeven.toFixed(2)} by expiry to break even — roughly a ${Math.abs(moveNeeded).toFixed(1)}% move from the current $${r.stockPx}.`);
+
+  // 3) IV assessment
+  if(ivp>90){
+    parts.push(`Implied volatility is very elevated at ${ivp.toFixed(0)}% — you're paying a rich premium, and a volatility crush after any catalyst (earnings, news) could hurt even if the stock moves your way.`);
+  }else if(ivp>60){
+    parts.push(`IV of ${ivp.toFixed(0)}% is on the high side, so some of this premium reflects volatility risk, not just directional odds.`);
+  }else if(ivp>35){
+    parts.push(`IV of ${ivp.toFixed(0)}% is moderate and roughly in line with normal pricing for this name.`);
+  }else{
+    parts.push(`IV of ${ivp.toFixed(0)}% is relatively low, which keeps the premium cheap but also means the option won't benefit much from a volatility expansion alone.`);
+  }
+
+  // 4) Theta / time decay
+  const dailyDecayPct=r.ask>0?(Math.abs(r.theta)/r.ask*100):0;
+  if(r.dte<=7){
+    parts.push(`With only ${r.dte} day${r.dte===1?'':'s'} to expiry, theta decay is severe — you're losing roughly ${dailyDecayPct.toFixed(1)}% of the option's value per day just from time, so this needs a fast move to work.`);
+  }else if(r.dte<=21){
+    parts.push(`Theta is running at about $${Math.abs(r.theta).toFixed(3)}/day (~${dailyDecayPct.toFixed(1)}% of premium) — manageable, but don't sit on this too long without progress.`);
+  }else{
+    parts.push(`Time decay is gentler here (${r.dte} DTE), giving the thesis more room to play out without panic-level theta burn.`);
+  }
+
+  // 5) Delta / leverage character
+  if(ad<0.10){
+    parts.push(`Delta of ${r.delta.toFixed(2)} means this behaves like a lottery ticket — it needs a sizable, fast move just to gain meaningful value.`);
+  }else if(ad<0.30){
+    parts.push(`Delta of ${r.delta.toFixed(2)} gives leveraged exposure with a lower upfront cost than an ATM option, at the tradeoff of a lower probability of finishing in the money.`);
+  }else{
+    parts.push(`Delta of ${r.delta.toFixed(2)} keeps this close to the money, so it tracks the stock more closely than a deep OTM contract would.`);
+  }
+
+  // 6) Liquidity / spread
+  if(spreadPct>15){
+    parts.push(`Watch the spread — at $${spread.toFixed(2)} (${spreadPct.toFixed(0)}% of ask) it's wide, so use limit orders and expect some slippage on entry/exit.`);
+  }else if(r.oi<100){
+    parts.push(`Open interest is thin (${r.oi.toLocaleString()}), so liquidity could be an issue when you try to exit.`);
+  }
+
+  // 7) Actionable closing line
+  if(r.score>=70&&ad>=0.25&&ad<=0.65&&r.dte>=7){
+    parts.push(`Actionable: this profile (balanced delta, reasonable DTE, decent score) is one of the more defensible picks in this scan — consider it as a primary candidate, sized small given it's still a directional bet.`);
+  }else if(r.dte<=7){
+    parts.push(`Actionable: only consider this if you have a strong, immediate directional view — the short timeframe leaves little margin for being early.`);
+  }else if(ivp>90){
+    parts.push(`Actionable: if you like the direction but not the IV, consider waiting for IV to cool off, or sizing this smaller than usual to account for the volatility premium you're paying.`);
+  }else{
+    parts.push(`Actionable: reasonable as a small, speculative position — keep size modest and have a clear exit plan (target % gain or max loss) before entering.`);
+  }
+
+  return parts.join(' ');
+}
+
+function showAnalysis(r){
+  const ai=document.getElementById('dAI');
+  ai.className='aibox';
+  ai.textContent=localAnalysis(r);
 }
 </script>
+
 </body>
 </html>
