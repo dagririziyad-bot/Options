@@ -198,6 +198,12 @@ td{padding:9px 11px;vertical-align:middle;white-space:nowrap;}
   </div>
 
   <div>
+    <label class="lbl">Worker URL <span style="color:var(--rd)">*required</span></label>
+    <input type="text" class="inp" id="workerUrl" placeholder="https://your-worker.workers.dev"
+      onchange="localStorage.setItem('yfWorkerUrl', this.value)">
+  </div>
+
+  <div>
     <label class="lbl">Tickers</label>
     <div class="ti-row">
       <input type="text" id="ti" placeholder="e.g. NVDA" maxlength="6">
@@ -332,7 +338,7 @@ td{padding:9px 11px;vertical-align:middle;white-space:nowrap;}
     <div class="empty" id="es">
       <i class="ti ti-radar empty-icon"></i>
       <div class="empty-title">Ready to scan</div>
-      <div class="empty-sub">Open this file locally (not inside claude.ai) for Yahoo Finance to work. Click <strong>Scan Live Data</strong> to fetch real option chains.</div>
+      <div class="empty-sub">Paste your Cloudflare Worker URL in the sidebar (see setup guide), then click <strong>Scan Live Data</strong> to fetch real option chains.</div>
     </div>
     <table id="rt" style="display:none">
       <thead><tr>
@@ -450,6 +456,10 @@ function setDTE(v,btn){
 }
 renderTags();
 
+/* Load saved Worker URL */
+const savedWorkerUrl = localStorage.getItem('yfWorkerUrl');
+if(savedWorkerUrl) document.getElementById('workerUrl').value = savedWorkerUrl;
+
 /* ── BLACK-SCHOLES ── */
 function nCDF(x){
   const a1=0.254829592,a2=-0.284496736,a3=1.421413741,a4=-1.453152027,a5=1.061405429,p=0.3275911;
@@ -495,57 +505,31 @@ function score(c,sp){
   return{sc:Math.max(0,Math.min(100,sc)),reasons};
 }
 
-/* ── YAHOO FINANCE FETCH (real, no simulation) ── */
+/* ── YAHOO FINANCE FETCH via Cloudflare Worker (real, no simulation, no flaky proxies) ── */
+async function tryFetch(workerBase, params){
+  const url = `${workerBase}?${params}`;
+  const r = await fetch(url, { headers:{'Accept':'application/json'}, signal: AbortSignal.timeout(10000) });
+  const d = await r.json();
+  if (d.error) throw new Error(d.error);
+  if (!d?.optionChain?.result?.[0]) throw new Error('Unexpected response shape from worker');
+  return d;
+}
+
 async function fetchYahoo(ticker){
   const maxP=parseFloat(document.getElementById('rP').value);
   const minV=parseInt(document.getElementById('rV').value)||0;
   const minOI=parseInt(document.getElementById('rOI').value)||0;
   const nowSec=Date.now()/1000;
 
-  // Multiple Yahoo endpoints
-  const base=[
-    `https://query2.finance.yahoo.com/v7/finance/options/${ticker}`,
-    `https://query1.finance.yahoo.com/v7/finance/options/${ticker}`,
-  ];
-  // CORS Proxies — tried in order
-  const proxies=[
-    u=>`https://corsproxy.io/?url=${encodeURIComponent(u)}`,
-    u=>`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-    u=>`https://thingproxy.freeboard.io/fetch/${u}`,
-    u=>`https://proxy.cors.sh/${u}`,
-    u=>`https://cors.eu.org/${u}`,
-  ];
+  const workerBase = (document.getElementById('workerUrl').value || '').trim().replace(/\/+$/,'');
+  if(!workerBase) throw new Error('Worker URL not set — paste your Cloudflare Worker URL in the sidebar first.');
 
-  async function tryFetch(url){
-    // Direct first
-    try{
-      const r=await fetch(url,{headers:{'Accept':'application/json'},signal:AbortSignal.timeout(6000)});
-      if(r.ok){const d=await r.json();if(d?.optionChain?.result?.[0])return d;}
-    }catch{}
-    // Then proxies
-    for(const mk of proxies){
-      try{
-        const r=await fetch(mk(url),{
-          headers:{'Accept':'application/json','x-requested-with':'XMLHttpRequest'},
-          signal:AbortSignal.timeout(8000)
-        });
-        if(!r.ok)continue;
-        const txt=await r.text();
-        if(!txt||!txt.includes('optionChain'))continue;
-        const d=JSON.parse(txt);
-        if(d?.optionChain?.result?.[0])return d;
-      }catch{}
-    }
-    return null;
+  let qData;
+  try{
+    qData = await tryFetch(workerBase, `ticker=${encodeURIComponent(ticker)}`);
+  }catch(e){
+    throw new Error(`Worker fetch failed: ${e.message}`);
   }
-
-  // Try main endpoints
-  let qData=null;
-  for(const url of base){
-    qData=await tryFetch(url);
-    if(qData)break;
-  }
-  if(!qData)throw new Error(`All ${proxies.length+1} sources failed for ${ticker}`);
 
   const result=qData.optionChain.result[0];
   const sp=result.quote?.regularMarketPrice||result.quote?.regularMarketPreviousClose||0;
@@ -565,16 +549,14 @@ async function fetchYahoo(ticker){
   // Additional expirations
   for(const expTs of toFetch.slice(1)){
     try{
-      const d=await tryFetch(`https://query2.finance.yahoo.com/v7/finance/options/${ticker}?date=${expTs}`);
-      if(d){
-        const opts=d.optionChain.result[0].options?.[0];
-        if(opts){
-          (opts.calls||[]).forEach(c=>raw.push({...c,_type:'call'}));
-          (opts.puts||[]).forEach(p=>raw.push({...p,_type:'put'}));
-        }
+      const d=await tryFetch(workerBase, `ticker=${encodeURIComponent(ticker)}&date=${expTs}`);
+      const opts=d.optionChain.result[0].options?.[0];
+      if(opts){
+        (opts.calls||[]).forEach(c=>raw.push({...c,_type:'call'}));
+        (opts.puts||[]).forEach(p=>raw.push({...p,_type:'put'}));
       }
     }catch{}
-    await new Promise(r=>setTimeout(r,300));
+    await new Promise(r=>setTimeout(r,150));
   }
 
   if(raw.length===0)throw new Error(`Yahoo returned 0 contracts for ${ticker}`);
@@ -626,6 +608,8 @@ async function fetchYahoo(ticker){
 async function runScan(){
   if(!watchlist.length){alert('Add at least one ticker.');return;}
   if(!selTypes.size){alert('Select at least one option type (CALL or PUT).');return;}
+  const workerUrlVal=(document.getElementById('workerUrl').value||'').trim();
+  if(!workerUrlVal){alert('Paste your Cloudflare Worker URL in the sidebar first. See the setup guide for instructions.');return;}
 
   const btn=document.getElementById('scanBtn');
   btn.disabled=true;
@@ -678,7 +662,7 @@ async function runScan(){
     bn.innerHTML=`<i class="ti ti-check"></i> All ${ok} tickers fetched live from Yahoo Finance. ${allResults.length} real contracts found.`;
   }else if(failed===watchlist.length){
     bn.className='banner err';
-    bn.innerHTML=`<i class="ti ti-x"></i> Yahoo Finance blocked — open this file on your local browser (not inside claude.ai). All requests failed.`;
+    bn.innerHTML=`<i class="ti ti-x"></i> All requests failed. Check your Worker URL is correct and deployed, or check the error log below.`;
   }else if(failed>0){
     bn.className='banner warn';
     bn.innerHTML=`<i class="ti ti-alert-circle"></i> ${ok} live · ${failed} failed. Failed tickers shown in red below.`;
@@ -735,7 +719,7 @@ function renderT(){
   if(rows.length===0){
     es.innerHTML=`<i class="ti ti-search-off empty-icon"></i>
       <div class="empty-title">No contracts found</div>
-      <div class="empty-sub">Try: Max Ask = $1.00 · Min Volume = Any · Min OI = Any · Max DTE = 90d+<br>Or open this file directly in Chrome/Edge (not inside claude.ai)</div>`;
+      <div class="empty-sub">Try: Max Ask = $1.00 · Min Volume = Any · Min OI = Any · Max DTE = 90d+<br>Make sure your Worker URL is set correctly in the sidebar.</div>`;
     es.style.display='flex';
     rt.style.display='none';
     return;
